@@ -130,16 +130,6 @@ public class DiscoveryThread implements Runnable {
         }
     }
 
-//    private boolean isDuplicated() {
-//        for (int i = 1; i < Global.rtEntry.size(); i++) {
-//            Log.e(TAG, "Global List Size: " + Global.rtEntry.size() + " Host Address in isDuplicated: " + rtEntry.getHostAddress() + " Host address in table in isDuplicated: " + Global.rtEntry.get(i).getHostAddress() + " i: " + i);
-//            if (Global.rtEntry.get(i).getHostAddress().equals(rtEntry.getHostAddress())) {
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
-
     private void onDiscRcv(DatagramPacket packet) {
         String hostAddr = packet.getAddress().getHostAddress();
         InetAddress hostAddress = null;
@@ -167,11 +157,9 @@ public class DiscoveryThread implements Runnable {
         Log.e(TAG, ">>>Sent packet to: " + sendPacket.getAddress().getHostAddress());
     }
 
-
     private void onDiscResRcv(DatagramPacket packet) {
 
         String hostAddr = packet.getAddress().getHostAddress();
-
 
         RoutingTable rtEntry2 = new RoutingTable();
         rtEntry2.setSourceAddress(myAddr);

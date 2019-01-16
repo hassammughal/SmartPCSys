@@ -21,30 +21,30 @@ import java.util.List;
 public class RoutesAdapter extends RecyclerView.Adapter<RoutesAdapter.MyViewHolder> {
 
     private String TAG = "RoutesAdapter";
-    private List<RoutingTable> dataSource;
+    private List<RoutingTable> rtEntry;
 
-    public RoutesAdapter(List<RoutingTable> dataSource) {
-        this.dataSource = dataSource;
+    public RoutesAdapter(List<RoutingTable> rtEntry) {
+        this.rtEntry = rtEntry;
     }
 
     public void insertRTEntry (List<RoutingTable> insertList){
-        SPSDiffUtilCallBack diffUtilCallBack = new SPSDiffUtilCallBack(dataSource,insertList);
+        SPSDiffUtilCallBack diffUtilCallBack = new SPSDiffUtilCallBack(rtEntry,insertList);
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallBack);
         //dataSource.clear();
-        dataSource.addAll(insertList);
+        rtEntry.addAll(insertList);
         notifyDataSetChanged();
         diffResult.dispatchUpdatesTo(this);
     }
 
     public void updateRTEntry (List<RoutingTable> newList){
-        SPSDiffUtilCallBack diffUtilCallBack = new SPSDiffUtilCallBack(dataSource,newList);
+        SPSDiffUtilCallBack diffUtilCallBack = new SPSDiffUtilCallBack(rtEntry,newList);
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallBack);
-        Log.e(TAG, "List Size: "+dataSource.size());
-        dataSource.clear();
+        Log.e(TAG, "List Size: "+rtEntry.size());
+        rtEntry.clear();
         notifyDataSetChanged();
-        dataSource = new ArrayList<>(newList);
+        rtEntry = new ArrayList<>(newList);
         notifyDataSetChanged();
-        Log.e(TAG, "After List Size: "+dataSource.size());
+        Log.e(TAG, "After List Size: "+rtEntry.size());
         Log.e(TAG, "NewList Size: "+newList.size());
         diffResult.dispatchUpdatesTo(this);
     }
@@ -60,14 +60,14 @@ public class RoutesAdapter extends RecyclerView.Adapter<RoutesAdapter.MyViewHold
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder myViewHolder, int i) {
 
-        myViewHolder.tv_sourceAddress.setText("My IP Address: "+dataSource.get(i).getSourceAddress());
-        myViewHolder.tv_destAddress.setText("Host IP Address: "+dataSource.get(i).getHostAddress());
-        myViewHolder.tv_time.setText(dataSource.get(i).getInsertTime());
+        myViewHolder.tv_sourceAddress.setText("My IP Address: "+rtEntry.get(i).getSourceAddress());
+        myViewHolder.tv_destAddress.setText("Host IP Address: "+rtEntry.get(i).getHostAddress());
+        myViewHolder.tv_time.setText(rtEntry.get(i).getInsertTime());
     }
 
     @Override
     public int getItemCount() {
-        return dataSource.size();
+        return rtEntry.size();
     }
 
     public static class MyViewHolder extends RecyclerView.ViewHolder{

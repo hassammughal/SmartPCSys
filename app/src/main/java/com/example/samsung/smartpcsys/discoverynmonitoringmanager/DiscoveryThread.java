@@ -7,7 +7,6 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.example.samsung.smartpcsys.adapters.NodesAdapter;
 import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
 import com.example.samsung.smartpcsys.utils.Global;
@@ -25,6 +24,7 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,9 +38,9 @@ public class DiscoveryThread implements Runnable {
     private DatagramSocket socket, skt;
     private RoutesAdapter adapter;
     private String myAddr;
-    private RoutingTable rtEntry = null ;
+    private RoutingTable rtEntry = null;
     private RTViewModel rtViewModel;
-   // private NodesAdapter nodesAdapter;
+    // private NodesAdapter nodesAdapter;
 
     private DiscoveryThread() {
     }
@@ -50,34 +50,37 @@ public class DiscoveryThread implements Runnable {
         this.adapter = adapter;
     }
 
-    /** init() method
-     *  Creates socket object and set setting
-     *  finds private IP address from AP
+    /**
+     * init() method
+     * Creates socket object and set setting
+     * finds private IP address from AP
      */
-    private void init(){
-        try{
+    private void init() {
+        try {
             socket = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
             socket.setReuseAddress(true);
             socket.setBroadcast(true);
             myAddr = getLocalIpAddr();
-            rtViewModel = new RTViewModel();
+            // rtViewModel = new RTViewModel();
             adapter = new RoutesAdapter(Global.rtEntry);
             //nodesAdapter = new NodesAdapter();
             rtEntry = new RoutingTable();
             rtEntry.setSourceAddress(myAddr);
             rtEntry.setInsertTime(getTime());
-//            Global.rtEntry.add(rtEntry);
-//            adapter.insertRTEntry(Global.rtEntry);
+            rtEntry.setHostAddress(myAddr);
+            Global.rtEntry.add(rtEntry);
+            //adapter.insertRTEntry(rtEntry);
             Log.e(TAG, "Routing Table Size: " + Global.rtEntry.size());
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    /** recv() method
-     *  receives data from packet
-     *  displays Log message
+    /**
+     * recv() method
+     * receives data from packet
+     * displays Log message
      */
 
     private void recvPacket() {
@@ -95,16 +98,29 @@ public class DiscoveryThread implements Runnable {
                 String host = packet.getAddress().getHostAddress();
 
                 Log.e(TAG, ">>>packet received from: " + host);
-                Log.e(TAG, ">>>Packet received; Data: " + new String(packet.getData()).trim());
-                //See if the packet holds the right command (message)
-                String message = new String(packet.getData()).trim();
-                if (message.equals("DiscoveryPacket") && !myAddr.equals(host)) {
-                    onDiscRcv(packet);
-                } else if (message.equals("DISCOVERY_RESPONSE") && !myAddr.equals(host)) {
-                    Log.e(TAG, ">>> Broadcast response from destination address: " + packet.getAddress().getHostAddress());
-                    onDiscResRcv(packet);
-                } else if (myAddr.equals(host)) {
-                    Log.e(TAG, "source IP address in packet is my IP address, so ignored");
+
+                if (!host.equals(myAddr)) {
+                    Log.e(TAG, ">>>Packet received; Data: " + new String(packet.getData()).trim());
+                    //See if the packet holds the right command (message)
+                    String message = new String(packet.getData()).trim();
+                    if (Global.rtEntry.size() > 1) {
+                        if (message.equals("DiscoveryPacket") && !LookupRoute(host)) {  //&& !rtEntry.getHostAddress().equals(host)
+                            onDiscRcv(packet);
+                        } else if (message.equals("DISCOVERY_RESPONSE") && !LookupRoute(host)) {
+                            Log.e(TAG, ">>> Broadcast response from destination address: " + packet.getAddress().getHostAddress());
+                            onDiscResRcv(packet);
+                        }
+                    } else {
+                        if (message.equals("DiscoveryPacket")) {  //&& !rtEntry.getHostAddress().equals(host)
+                            onDiscRcv(packet);
+                            Log.e(TAG, ">>> Else Discovery Packet received from destination address: " + packet.getAddress().getHostAddress());
+                        } else if (message.equals("DISCOVERY_RESPONSE")) {
+                            Log.e(TAG, ">>> Else Broadcast response from destination address: " + packet.getAddress().getHostAddress());
+                            onDiscResRcv(packet);
+                        }
+                    }
+                } else {
+                    Log.e(TAG, "Host IP address in packet is my IP address, so ignored");
                 }
                 Thread.sleep(50);
             } catch (Exception ex) {
@@ -114,16 +130,17 @@ public class DiscoveryThread implements Runnable {
         }
     }
 
-    private boolean isDuplicated(){
-        for(int i=0; i<Global.rtEntry.size();i++){
-            if(Global.rtEntry.get(i).getHostAddress().equals(rtEntry.getHostAddress()))
-                return true;
-        }
-        return false;
-    }
+//    private boolean isDuplicated() {
+//        for (int i = 1; i < Global.rtEntry.size(); i++) {
+//            Log.e(TAG, "Global List Size: " + Global.rtEntry.size() + " Host Address in isDuplicated: " + rtEntry.getHostAddress() + " Host address in table in isDuplicated: " + Global.rtEntry.get(i).getHostAddress() + " i: " + i);
+//            if (Global.rtEntry.get(i).getHostAddress().equals(rtEntry.getHostAddress())) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
-
-    private void onDiscRcv(DatagramPacket packet){
+    private void onDiscRcv(DatagramPacket packet) {
         String hostAddr = packet.getAddress().getHostAddress();
         InetAddress hostAddress = null;
         try {
@@ -131,91 +148,62 @@ public class DiscoveryThread implements Runnable {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        if (rtEntry.getHostAddress() != null){
 
-            if(rtEntry.getHostAddress().equals(hostAddr)){
-                Log.e(TAG, "Received similar Discovery Packet, hence dropping it");
-                rtEntry.setInsertTime(getTime());
-            }
-            else if(!isDuplicated()){
-                rtEntry.setInsertTime(getTime());
-                rtEntry.setHostAddress(hostAddr);
-                Global.rtEntry.add(rtEntry);
+        RoutingTable rtEntry1 = new RoutingTable();
+        rtEntry1.setSourceAddress(myAddr);
+        rtEntry1.setInsertTime(getTime());
+        rtEntry1.setHostAddress(hostAddr);
+        adapter.insertRTEntry(rtEntry1);
+        Log.e(TAG, "onDiscRcv: Route inserted to adapter");
 
-               // rtViewModel.setRTEntry(Global.rtEntry);
-                adapter.updateRTEntry(Global.rtEntry);
-                Log.e(TAG, "onDiscRcv IF List size: " + Global.rtEntry.size());
-                adapter.notifyDataSetChanged();
-
-                byte[] sendData = "DISCOVERY_RESPONSE".getBytes();
-                //Send a response
-                final DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, hostAddress, 8888);
-                try {
-                    socket.send(sendPacket);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                Log.e(TAG, ">>>Sent packet to: " + sendPacket.getAddress().getHostAddress());
-            }
+        byte[] sendData = "DISCOVERY_RESPONSE".getBytes();
+        //Send a response
+        final DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, hostAddress, 8888);
+        try {
+            socket.send(sendPacket);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        else{
-            rtEntry.setInsertTime(getTime());
-            rtEntry.setHostAddress(hostAddr);
-            Global.rtEntry.add(rtEntry);
-            //rtViewModel.setRTEntry(Global.rtEntry);
-            adapter.insertRTEntry(Global.rtEntry);
-            Log.e(TAG, "onDiscRcv Else List size: " + Global.rtEntry.size());
-           // adapter.notifyDataSetChanged();
-
-            byte[] sendData = "DISCOVERY_RESPONSE".getBytes();
-            //Send a response
-            final DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, hostAddress, 8888);
-            try {
-                socket.send(sendPacket);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Log.e(TAG, ">>>Sent packet to: " + sendPacket.getAddress().getHostAddress());
-        }
-
+        Log.e(TAG, ">>>Sent packet to: " + sendPacket.getAddress().getHostAddress());
     }
+
 
     private void onDiscResRcv(DatagramPacket packet) {
 
         String hostAddr = packet.getAddress().getHostAddress();
 
-        if (rtEntry.getHostAddress() != null) {
-            if (rtEntry.getHostAddress().equals(hostAddr)) {
-                Log.e(TAG, "Received similar Discovery Response Packet, hence dropping it");
-                rtEntry.setInsertTime(getTime());
-            }
-            else {
-                rtEntry.setInsertTime(getTime());
-                rtEntry.setHostAddress(hostAddr);
-                Global.rtEntry.add(rtEntry);
-              //  rtViewModel.setRTEntry(Global.rtEntry);
-                adapter.updateRTEntry(Global.rtEntry);
-                Log.e(TAG, "onDiscResRcv IF List size: " + Global.rtEntry.size());
-                adapter.notifyDataSetChanged();
-            }
-        }
-        else {
-            rtEntry.setInsertTime(getTime());
-            rtEntry.setHostAddress(hostAddr);
-            Global.rtEntry.add(rtEntry);
-          //  rtViewModel.setRTEntry(Global.rtEntry);
-            adapter.updateRTEntry(Global.rtEntry);
-            Log.e(TAG, "onDiscResRcv Else List size: " + Global.rtEntry.size());
-            adapter.notifyDataSetChanged();
-        }
+
+        RoutingTable rtEntry2 = new RoutingTable();
+        rtEntry2.setSourceAddress(myAddr);
+        rtEntry2.setInsertTime(getTime());
+        rtEntry2.setHostAddress(hostAddr);
+        adapter.insertRTEntry(rtEntry2);
+        Log.e(TAG, "onDiscResRcv: Route inserted to adapter");
+
     }
+
+    private boolean LookupRoute(String hostAddress) {
+        if (Global.rtEntry.size() > 0) {
+            synchronized (Global.rtEntry) {
+                Iterator<RoutingTable> itr = Global.rtEntry.iterator();
+                while (itr.hasNext()) {
+                    if (itr.next().getHostAddress().equals(hostAddress)) {
+                        Log.e(TAG, "Discovery Packet Received from same address");
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * Override method for DiscoveryThread
      */
     @Override
     public void run() {
         init();
-        new SendDiscoveryPacketThread().start();
+        //new SendDiscoveryPacketThread().start();
         new RecvThread().start();
         new SendThread().start();
     }
@@ -241,14 +229,13 @@ public class DiscoveryThread implements Runnable {
     }
 
     /**
-     *
      * @return private IP address in device or null
      */
-    private String getLocalIpAddr(){
+    private String getLocalIpAddr() {
         try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
                 NetworkInterface intf = en.nextElement();
-                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
                     InetAddress inetAddress = enumIpAddr.nextElement();
                     if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
                         //routingTable.setId(DeviceID.getID());
@@ -312,15 +299,15 @@ public class DiscoveryThread implements Runnable {
                         Log.e(TAG, ">>> Broadcast packet sent to: " + broadcast.getHostAddress() + "; Interface: " + networkInterface.getDisplayName());
                     }
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-            Log.e(TAG,">>> Done looping over all network interfaces. Now waiting for a reply!");
+            Log.e(TAG, ">>> Done looping over all network interfaces. Now waiting for a reply!");
         }
 
     }
 
-    private class SendDiscoveryPacketThread extends Thread{
+    private class SendDiscoveryPacketThread extends Thread {
         @Override
         public void run() {
             while (true) {
@@ -340,7 +327,7 @@ public class DiscoveryThread implements Runnable {
         }
     }
 
-    private class RecvThread extends Thread{
+    private class RecvThread extends Thread {
         @Override
         public void run() {
             recvPacket();
@@ -378,7 +365,7 @@ public class DiscoveryThread implements Runnable {
         return phrase.toString();
     }
 
-    public String getTime(){
+    public String getTime() {
         Calendar calendar = Calendar.getInstance();
         SimpleDateFormat mdformat = new SimpleDateFormat("HH:mm:ss");
         String strDate = "Current Time : " + mdformat.format(calendar.getTime());

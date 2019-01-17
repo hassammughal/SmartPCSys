@@ -40,6 +40,7 @@ public class DiscoveryThread implements Runnable {
     private String myAddr;
     private RoutingTable rtEntry = null;
     private RTViewModel rtViewModel;
+    private boolean check = false;
     // private NodesAdapter nodesAdapter;
 
     private DiscoveryThread() {
@@ -106,10 +107,17 @@ public class DiscoveryThread implements Runnable {
                     if (Global.rtEntry.size() > 1) {
                         if (message.equals("DiscoveryPacket") && !LookupRoute(host)) {  //&& !rtEntry.getHostAddress().equals(host)
                             onDiscRcv(packet);
-                        } else if (message.equals("DISCOVERY_RESPONSE") && !LookupRoute(host)) {
+                        } else if (message.equals("DiscoveryPacket") && LookupRoute(host)) {
+                            updateTime(host);
+                        }
+
+                        if (message.equals("DISCOVERY_RESPONSE") && !LookupRoute(host)) {
                             Log.e(TAG, ">>> Broadcast response from destination address: " + packet.getAddress().getHostAddress());
                             onDiscResRcv(packet);
+                        } else if (message.equals("DISCOVERY_RESPONSE") && LookupRoute(host)) {
+                            updateTime(host);
                         }
+
                     } else {
                         if (message.equals("DiscoveryPacket")) {  //&& !rtEntry.getHostAddress().equals(host)
                             onDiscRcv(packet);
@@ -128,6 +136,12 @@ public class DiscoveryThread implements Runnable {
                 break;
             }
         }
+    }
+
+    private void updateTime(String hostAddr) {
+        int index = getIndex(hostAddr);
+        Log.e(TAG, "Index: " + index);
+        Global.rtEntry.get(index).setInsertTime(getTime());
     }
 
     private void onDiscRcv(DatagramPacket packet) {
@@ -185,13 +199,25 @@ public class DiscoveryThread implements Runnable {
         return false;
     }
 
+    private int getIndex(String hostAddress) {
+        int index = 0;
+        for (int i = 1; i < Global.rtEntry.size(); i++) {
+            if (Global.rtEntry.get(i).getHostAddress().equals(hostAddress)) {
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
+
     /**
      * Override method for DiscoveryThread
      */
     @Override
     public void run() {
         init();
-        //new SendDiscoveryPacketThread().start();
+        new SendDiscoveryPacketThread().start();
+        //new CheckPacketRcvdThread().start();
         new RecvThread().start();
         new SendThread().start();
     }
@@ -306,7 +332,7 @@ public class DiscoveryThread implements Runnable {
                     pkt.setAddress(getBroadcastAddress());
                     pkt.setPort(8888);
                     socket.send(pkt);
-                    Thread.sleep(10000); // period time for sending, 5sec
+                    Thread.sleep(5000); // period time for sending, 5sec
                 } catch (Exception e) {
                     e.printStackTrace();
                     break;
@@ -314,6 +340,24 @@ public class DiscoveryThread implements Runnable {
             }
         }
     }
+
+//    private class CheckPacketRcvdThread extends Thread {
+//        @Override
+//        public void run() {
+//            while (true) {
+//                try {
+//                    byte[] recvBuf = new byte[1500];
+//                    final DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);
+//                    socket.receive(packet);
+//                    Log.e(TAG, "Packet Received");
+//                    Thread.sleep(15000); // period time for sending, 5sec
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                    break;
+//                }
+//            }
+//        }
+//    }
 
     private class RecvThread extends Thread {
         @Override

@@ -1,15 +1,12 @@
 package com.example.samsung.smartpcsys.activities;
 
-import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
 import com.example.samsung.smartpcsys.R;
-import com.example.samsung.smartpcsys.adapters.NodesAdapter;
 import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
 import com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryThread;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
@@ -47,6 +44,25 @@ public class MainActivity extends AppCompatActivity {
 //        Log.e(TAG, "List Size: "+rtEntries.size());
         recyclerView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
+        final Handler mHandler = new Handler();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(10);
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                adapter.notifyDataSetChanged();
+                            }
+                        });
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
         //adapter.updateData(Global.tables);
 
 //        rtViewModel = ViewModelProviders.of(this).get(RTViewModel.class);

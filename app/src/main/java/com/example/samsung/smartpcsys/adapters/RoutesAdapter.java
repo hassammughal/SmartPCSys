@@ -31,6 +31,13 @@ public class RoutesAdapter extends RecyclerView.Adapter<RoutesAdapter.MyViewHold
         //diffResult.dispatchUpdatesTo(this);
     }
 
+    public void removeRTEntry(int index) {
+        Global.rtEntry.remove(index);
+        notifyItemRemoved(index);
+        notifyItemRangeChanged(index, Global.rtEntry.size());
+        notifyDataSetChanged();
+    }
+
 //    public void updateRTEntry (List<RoutingTable> newList){
 //        SPSDiffUtilCallBack diffUtilCallBack = new SPSDiffUtilCallBack(rtEntry,newList);
 //        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallBack);

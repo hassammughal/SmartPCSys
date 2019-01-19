@@ -30,19 +30,11 @@ public class MainActivity extends AppCompatActivity {
 
         Thread discoveryThread = new Thread(DiscoveryThread.getInstance());
         discoveryThread.start();
-//        try {
-//            Thread.sleep(500);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
         recyclerView = findViewById(R.id.recyclerview);
-        //Button button = findViewById(R.id.btn_update);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
 
         final RoutesAdapter adapter = new RoutesAdapter(Global.rtEntry);
-       // final NodesAdapter adapter = new NodesAdapter();
-//        Log.e(TAG, "List Size: "+rtEntries.size());
         recyclerView.setAdapter(adapter);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         final Handler mHandler = new Handler();
@@ -64,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).start();
-        //adapter.updateData(Global.tables);
+
 
 //        rtViewModel = ViewModelProviders.of(this).get(RTViewModel.class);
 //        rtViewModel.getRTEntry().observe(this, new Observer<List<RoutingTable>>(){

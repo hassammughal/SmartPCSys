@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerview);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-
         final RoutesAdapter adapter = new RoutesAdapter(Global.rtEntry);
         recyclerView.setAdapter(adapter);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
@@ -56,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).start();
-
-
+    }
+}
 //        rtViewModel = ViewModelProviders.of(this).get(RTViewModel.class);
 //        rtViewModel.getRTEntry().observe(this, new Observer<List<RoutingTable>>(){
 //
@@ -66,7 +65,3 @@ public class MainActivity extends AppCompatActivity {
 //                adapter.submitList(Global.rtEntry);
 //            }
 //        });
-
-    }
-
-}

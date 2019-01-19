@@ -64,7 +64,7 @@ public class RoutesAdapter extends RecyclerView.Adapter<RoutesAdapter.MyViewHold
 
         myViewHolder.tv_sourceAddress.setText("My IP Address: " + Global.rtEntry.get(i).getSourceAddress());
         myViewHolder.tv_destAddress.setText("Host IP Address: " + Global.rtEntry.get(i).getHostAddress());
-        myViewHolder.tv_time.setText(Global.rtEntry.get(i).getInsertTime());
+        myViewHolder.tv_time.setText("Current Time: " + Global.rtEntry.get(i).getInsertTime());
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.example.samsung.smartpcsys.activities;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
@@ -43,14 +44,14 @@ public class MainActivity extends AppCompatActivity {
        // final NodesAdapter adapter = new NodesAdapter();
 //        Log.e(TAG, "List Size: "+rtEntries.size());
         recyclerView.setAdapter(adapter);
-        adapter.notifyDataSetChanged();
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
         final Handler mHandler = new Handler();
         new Thread(new Runnable() {
             @Override
             public void run() {
                 while (true) {
                     try {
-                        Thread.sleep(10);
+                        Thread.sleep(1);
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {

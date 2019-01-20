@@ -45,7 +45,6 @@ public class DiscoveryThread implements Runnable {
     private RoutingTable rtEntry = null;
     private RTViewModel rtViewModel;
     private boolean check = false;
-    // private NodesAdapter nodesAdapter;
 
     private DiscoveryThread() {
     }
@@ -273,7 +272,6 @@ public class DiscoveryThread implements Runnable {
     }
 
     private static class DiscoveryThreadHolder {
-
         private static final DiscoveryThread INSTANCE = new DiscoveryThread();
     }
 

@@ -1,4 +1,4 @@
-package com.example.samsung.smartpcsys.discoverynmonitoringmanager.Packets;
+package com.example.samsung.smartpcsys.Packets;
 
 import java.net.InetAddress;
 import java.util.Date;

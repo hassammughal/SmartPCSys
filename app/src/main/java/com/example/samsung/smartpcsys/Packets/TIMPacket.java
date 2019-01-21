@@ -1,6 +1,4 @@
-package com.example.samsung.smartpcsys.discoverynmonitoringmanager.Packets;
-
-import java.net.InetAddress;
+package com.example.samsung.smartpcsys.Packets;
 
 public class TIMPacket {
     private int messageType;

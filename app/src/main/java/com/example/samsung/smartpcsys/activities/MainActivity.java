@@ -9,7 +9,7 @@ import android.support.v7.widget.RecyclerView;
 
 import com.example.samsung.smartpcsys.R;
 import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
-import com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryThread;
+import com.example.samsung.smartpcsys.communicationmanager.CommunicationManager;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
 import com.example.samsung.smartpcsys.utils.Global;
 import com.example.samsung.smartpcsys.viewmodels.RTViewModel;
@@ -28,8 +28,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Thread discoveryThread = new Thread(DiscoveryThread.getInstance());
-        discoveryThread.start();
+        Thread comMgr = new Thread(CommunicationManager.getInstance());
+        comMgr.start();
         recyclerView = findViewById(R.id.recyclerview);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 

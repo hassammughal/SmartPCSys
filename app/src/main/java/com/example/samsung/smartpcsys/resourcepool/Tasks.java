@@ -1,4 +1,4 @@
-package com.example.samsung.smartpcsys.discoverynmonitoringmanager;
+package com.example.samsung.smartpcsys.resourcepool;
 
 public class Tasks {
     private int id;

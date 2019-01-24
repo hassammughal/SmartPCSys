@@ -3,8 +3,16 @@ package com.example.samsung.smartpcsys.communicationmanager;
 import android.content.Context;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
+import android.provider.Settings;
 import android.util.Log;
 
+import com.example.samsung.smartpcsys.Packets.MDIRMPacket;
+import com.example.samsung.smartpcsys.Packets.MIMPacket;
+import com.example.samsung.smartpcsys.Packets.MIUMPacket;
+import com.example.samsung.smartpcsys.Packets.NIMPacket;
+import com.example.samsung.smartpcsys.Packets.NIRMPacket;
+import com.example.samsung.smartpcsys.Packets.NIUMPacket;
+import com.example.samsung.smartpcsys.Packets.TIMPacket;
 import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
 import com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
@@ -18,9 +26,12 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.LookupRoute;
 import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.compareTime;
@@ -88,33 +99,36 @@ public class CommunicationManager implements Runnable {
                 String host = packet.getAddress().getHostAddress();
 
                 Log.e(TAG, ">>>packet received from: " + host);
+                Log.e(TAG, " Data in the packet is: " + data(packet.getData()));
 
                 if (!host.equals(myAddr)) {
-                    Log.e(TAG, ">>>Packet received; Data: " + new String(packet.getData()).trim());
                     //See if the packet holds the right command (message)
                     String message = new String(packet.getData()).trim();
+                    String[] msg = message.split(Pattern.quote("|"));
+                    int pktType = Integer.parseInt(msg[0]);
+                    Log.e(TAG, ">>>Packet received; Data: " + message);
                     if (Global.rtEntry.size() > 1) {
 
-                        if (message.equals("DiscoveryPacket") && !LookupRoute(host)) {
+                        if (pktType == 1 && !LookupRoute(host)) {
                             DiscoveryAndMonitoringManager.onDiscRcv(packet);
-                        } else if (message.equals("DiscoveryPacket") && LookupRoute(host)) {
+                        } else if (pktType == 1 && LookupRoute(host)) {
                             updateTime(host);
                             compareTime();
                         }
 
-                        if (message.equals("DISCOVERY_RESPONSE") && !LookupRoute(host)) {
+                        if (pktType == 2 && !LookupRoute(host)) {
                             Log.e(TAG, ">>> Broadcast response from destination address: " + packet.getAddress().getHostAddress());
                             onDiscResRcv(packet);
-                        } else if (message.equals("DISCOVERY_RESPONSE") && LookupRoute(host)) {
+                        } else if (pktType == 2 && LookupRoute(host)) {
                             updateTime(host);
                             compareTime();
                         }
 
                     } else {
-                        if (message.equals("DiscoveryPacket")) {
+                        if (pktType == 1) {
                             DiscoveryAndMonitoringManager.onDiscRcv(packet);
                             Log.e(TAG, ">>> Else Discovery Packet received from destination address: " + packet.getAddress().getHostAddress());
-                        } else if (message.equals("DISCOVERY_RESPONSE")) {
+                        } else if (pktType == 2) {
                             Log.e(TAG, ">>> Else Broadcast response from destination address: " + packet.getAddress().getHostAddress());
                             onDiscResRcv(packet);
                         }
@@ -130,6 +144,108 @@ public class CommunicationManager implements Runnable {
         }
     }
 
+    private static StringBuilder data(byte[] a) {
+        if (a == null)
+            return null;
+        StringBuilder ret = new StringBuilder();
+        int i = 0;
+        while (a[i] != 0) {
+            ret.append((char) a[i]);
+            i++;
+        }
+        return ret;
+    }
+
+    public void sendPacket(Object o) {
+
+        if (o instanceof NIMPacket) {
+            byte[] contents = o.toString().getBytes();
+            try {
+                DatagramSocket sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIMPacket) o).getBroadcastAddress(), 8888);
+                sokt.send(packet);
+                Log.e(TAG, ">>>Sent packet to: " + packet.getAddress().getHostAddress());
+                sokt.close();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (o instanceof NIRMPacket) {
+            byte[] contents = o.toString().getBytes();
+            try {
+                DatagramSocket sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIRMPacket) o).getDestinationAddress(), 8888);
+                sokt.send(packet);
+                Log.e(TAG, ">>>Sent packet to: " + packet.getAddress().getHostAddress());
+                sokt.close();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (o instanceof NIUMPacket) {
+            try {
+                DatagramSocket sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        }
+        if (o instanceof TIMPacket) {
+            try {
+                DatagramSocket sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        }
+        if (o instanceof MDIRMPacket) {
+            try {
+                DatagramSocket sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        }
+        if (o instanceof MIMPacket) {
+            try {
+                DatagramSocket sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        }
+        if (o instanceof MIUMPacket) {
+            try {
+                DatagramSocket sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+
+
+    public byte[] convertDatatoBytes(String data) {
+        byte[] dataArray = data.getBytes();
+
+        return dataArray;
+    }
+
     public void sendPacket(byte[] contents, InetAddress hostAddress) {
         try {
             DatagramSocket sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
@@ -141,6 +257,77 @@ public class CommunicationManager implements Runnable {
             e.printStackTrace();
         }
     }
+
+//    public void send(DatagramPacket packet){
+//
+//        try {
+//            socket.send(packet);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+
+    private class SendDiscoveryPacketThread extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    //String msg = "DiscoveryPacket";
+                    NIMPacket nimPacket = new NIMPacket();
+                    String androidId = Settings.Secure.getString(SngltonClass.get().getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
+                    nimPacket.setNodeID(androidId);
+                    nimPacket.setPacketType(1);
+                    nimPacket.setBroadcastAddress(getBroadcastAddress());
+                    nimPacket.setCCT(discoveryAndMonitoringManager.getMaxCPUSpeed());
+                    nimPacket.setCPI(discoveryAndMonitoringManager.getCurrentCPUSpeed());
+                    String msg = nimPacket.toString();
+                    byte[] uf = msg.getBytes();
+                    DatagramPacket pkt = new DatagramPacket(uf, uf.length);
+                    pkt.setAddress(getBroadcastAddress());
+                    pkt.setPort(8888);
+                    socket.send(pkt);
+                    Thread.sleep(5000); // period time for sending, 5sec
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    break;
+                }
+            }
+        }
+    }
+
+//    public void sendDiscoveryPacket(byte[] contents) {
+//        final Handler mHandler = new Handler(Looper.getMainLooper());
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                while (true) {
+//                    try {
+//                        Thread.sleep(5000); // period time for sending, 5sec
+//
+//                        mHandler.post(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                DatagramSocket sokt = null;
+//                                try {
+//                                    sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+//                                    DatagramPacket pkt = new DatagramPacket(contents, contents.length);
+//                                    pkt.setPort(8888);
+//                                    pkt.setAddress(getBroadcastAddress());
+//                                    sokt.send(pkt);
+//                                    Log.e(TAG, "Broadcast Packet Sent!");
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                        });
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }).start();
+//    }
+
     /**
      * Override method for CommunicationManager
      */
@@ -161,7 +348,7 @@ public class CommunicationManager implements Runnable {
         private static final CommunicationManager INSTANCE = new CommunicationManager();
     }
 
-    private InetAddress getBroadcastAddress() throws IOException {
+    public InetAddress getBroadcastAddress() throws IOException {
         // handle null somehow
         WifiManager mWifi = (WifiManager) SngltonClass.get().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         DhcpInfo dhcp = mWifi.getDhcpInfo();
@@ -183,7 +370,7 @@ public class CommunicationManager implements Runnable {
                 skt.setBroadcast(true);
                 //socket.setReuseAddress(true);
 
-                byte[] sendData = "DiscoveryPacket".getBytes();
+
 
                 //Try the 255.255.255.255 first
 //                try {
@@ -213,6 +400,15 @@ public class CommunicationManager implements Runnable {
 
                         // Send the broadcast packet!
                         try {
+                            NIMPacket nimPacket = new NIMPacket();
+                            String androidId = Settings.Secure.getString(SngltonClass.get().getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
+                            nimPacket.setNodeID(androidId);
+                            nimPacket.setPacketType(1);
+                            nimPacket.setBroadcastAddress(broadcast);
+                            nimPacket.setCCT(discoveryAndMonitoringManager.getMaxCPUSpeed());
+                            nimPacket.setCPI(discoveryAndMonitoringManager.getCurrentCPUSpeed());
+                            String msg = nimPacket.toString();
+                            byte[] sendData = msg.getBytes();
                             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcast, 8888);
                             skt.send(sendPacket);
                             Log.e(TAG, ">>> Discovery Packet Broadcasted");
@@ -231,25 +427,6 @@ public class CommunicationManager implements Runnable {
 
     }
 
-    private class SendDiscoveryPacketThread extends Thread {
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    String msg = "DiscoveryPacket";
-                    byte[] uf = msg.getBytes();
-                    DatagramPacket pkt = new DatagramPacket(uf, uf.length);
-                    pkt.setAddress(getBroadcastAddress());
-                    pkt.setPort(8888);
-                    socket.send(pkt);
-                    Thread.sleep(5000); // period time for sending, 5sec
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    break;
-                }
-            }
-        }
-    }
 
     private class RecvThread extends Thread {
         @Override

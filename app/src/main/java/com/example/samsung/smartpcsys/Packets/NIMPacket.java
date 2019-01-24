@@ -2,26 +2,36 @@ package com.example.samsung.smartpcsys.Packets;
 
 import android.support.annotation.NonNull;
 
+import java.net.InetAddress;
+
 public class NIMPacket {
-    private int messageType;
-    private int nodeID;
+    private int packetType;
+    private String nodeID;
     private double CPI;
     private double CCT;
-    private String broadcastAddress;
+    private InetAddress broadcastAddress;
 
-    public int getMessageType() {
-        return messageType;
+//    public NIMPacket(int packetType, String nodeID, double CPI, double CCT, InetAddress broadcastAddress) {
+//        this.packetType = packetType;
+//        this.nodeID = nodeID;
+//        this.CPI = CPI;
+//        this.CCT = CCT;
+//        this.broadcastAddress = broadcastAddress;
+//    }
+
+    public int getPacketType() {
+        return packetType;
     }
 
-    public void setMessageType(int messageType) {
-        this.messageType = messageType;
+    public void setPacketType(int packetType) {
+        this.packetType = packetType;
     }
 
-    public int getNodeID() {
+    public String getNodeID() {
         return nodeID;
     }
 
-    public void setNodeID(int nodeID) {
+    public void setNodeID(String nodeID) {
         this.nodeID = nodeID;
     }
 
@@ -41,17 +51,17 @@ public class NIMPacket {
         this.CCT = CCT;
     }
 
-    public String getBroadcastAddress() {
+    public InetAddress getBroadcastAddress() {
         return broadcastAddress;
     }
 
-    public void setBroadcastAddress(String broadcastAddress) {
+    public void setBroadcastAddress(InetAddress broadcastAddress) {
         this.broadcastAddress = broadcastAddress;
     }
 
     @Override
     @NonNull
     public String toString() {
-        return ("Packet Type: " + this.getMessageType() + ", Node ID: " + this.getNodeID() + ", CPI: " + this.getCPI() + ", CTT:" + this.getCCT() + ", Broadcast Address: " + this.broadcastAddress);
+        return (this.getPacketType() + "|" + this.getNodeID() + "|" + Double.toString(this.getCPI()) + "|" + Double.toString(this.getCCT()) + "|" + this.getBroadcastAddress());
     }
 }

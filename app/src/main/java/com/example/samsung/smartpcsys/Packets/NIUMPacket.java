@@ -5,11 +5,11 @@ import java.util.Date;
 
 public class NIUMPacket {
    private int messageType;
-   private int nodeID;
+   private String nodeID;
    private Date queueWaitingTime;
    private double availableMemory;
    private double availableBatteryPower;
-   private int destinationNodeID;
+   private String destinationNodeID;
    private InetAddress broadcastAddress;
 
 }

@@ -1,12 +1,15 @@
 package com.example.samsung.smartpcsys.discoverynmonitoringmanager;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.StatFs;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
@@ -21,17 +24,21 @@ import com.example.samsung.smartpcsys.utils.Global;
 import com.example.samsung.smartpcsys.utils.SngltonClass;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Iterator;
+
+import static android.content.Context.ACTIVITY_SERVICE;
 
 public class DiscoveryAndMonitoringManager {
     private static String TAG = "DiscoveryandMonitoringManager";
@@ -58,17 +65,21 @@ public class DiscoveryAndMonitoringManager {
         rtEntry.setHostAddress(myAddr);
         Global.rtEntry.add(rtEntry);
         Log.e(TAG, "Routing Table Size: " + Global.rtEntry.size());
-//        try {
-//            fillNIMPacket(1, androidId, getMaxCPUSpeed(), getCurrentCPUSpeed(), communicationManager.getBroadcastAddress());
-//            communicationManager.sendPacket(nimPacket);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
         getCpuInfo();
         getMemoryInfo();
         getInfo();
         getBatteryCapacity(SngltonClass.get().getApplicationContext());
-        //discoveryPacket();
+        Log.e(TAG, "Total Battery: " + getTotalBatteryCapacity(SngltonClass.get().getApplicationContext()) + " mAh");
+        Log.e(TAG, "Available Internal Memory: " + formatSize(getAvailableInternalMemorySize()));
+        Log.e(TAG, "Total Internal Memory: " + formatSize(getTotalInternalMemorySize()));
+        Log.e(TAG, "Total Internal Memory Used: " + formatSize(getInternalMemInfo()));
+        Log.e(TAG, "Total RAM: " + formatSize(totalRamMemorySize()));
+        Log.e(TAG, "Available RAM: " + formatSize((long) getAvailMemory()));
+//          try {
+//            fillNIMPacket(1,androidId,getCurrentCPUSpeed(),getMaxCPUSpeed(),communicationManager.getBroadcastAddress());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     public static void updateTime(String hostAddr) {
@@ -94,23 +105,11 @@ public class DiscoveryAndMonitoringManager {
         rtEntry1.setInsertTime(getTime());
         rtEntry1.setHostAddress(hostAddr);
         adapter.insertRTEntry(rtEntry1);
-//        try {
-//            fillNIMPacket(1, androidId, nimPacket.getCPI(), nimPacket.getCCT(), communicationManager.getBroadcastAddress());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
         Log.e(TAG, "onDiscRcv: Route inserted to adapter");
 
-        //byte[] sendData = "DISCOVERY_RESPONSE".getBytes();
-        //Send a response
-
-//        nirmPacket.setPacketType(2);
-//        nirmPacket.setSourceAddress(myAddr);
-//        nirmPacket.setDestinationAddress(hostAddress);
         fillNIRMPacket(2, myAddr, hostAddress);
         Log.e(TAG, "onDiscRcv: NIRM Packet sent to Communication Manager, NIRM packet contains: " + nirmPacket.getPacketType());
         communicationManager.sendPacket(nirmPacket);
-
     }
 
     public static void onDiscResRcv(DatagramPacket packet) {
@@ -192,35 +191,6 @@ public class DiscoveryAndMonitoringManager {
 
     }
 
-//    private static void discoveryPacket() {
-//
-//        String msg = "DiscoveryPacket";
-//        byte[] uf = msg.getBytes();
-//        communicationManager.sendDiscoveryPacket(uf);
-//
-//    }
-
-//    private class SendDiscoveryPacketThread extends Thread {
-//        @Override
-//        public void run() {
-//            while (true) {
-//                try {
-//                    String msg = "DiscoveryPacket";
-//                    byte[] uf = msg.getBytes();
-//                    DatagramPacket pkt = new DatagramPacket(uf, uf.length);
-//                    pkt.setAddress(communicationManager.getBroadcastAddress());
-//                    pkt.setPort(8888);
-//                    communicationManager.send(pkt);
-//                    Thread.sleep(5000); // period time for sending, 5sec
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                    break;
-//                }
-//            }
-//        }
-//    }
-
-
     private static int getIndex(String hostAddress) {
         int index = 0;
         for (int i = 1; i < Global.rtEntry.size(); i++) {
@@ -231,7 +201,6 @@ public class DiscoveryAndMonitoringManager {
         }
         return index;
     }
-
 
     private static String getDeviceName() {
         String manufacturer = Build.MANUFACTURER;
@@ -271,15 +240,195 @@ public class DiscoveryAndMonitoringManager {
         return strDate;
     }
 
-    public void getCpuInfo() {
-        try {
-            Process proc = Runtime.getRuntime().exec("cat /proc/cpuinfo");
-            InputStream is = proc.getInputStream();
+    public static void fillNIMPacket(int type, String id, double cpi, double cct, InetAddress broadcastAddress) {
+        nimPacket.setNodeID(id);
+        nimPacket.setPacketType(type);
+        nimPacket.setCCT(cct);
+        nimPacket.setCPI(cpi);
+        nimPacket.setBroadcastAddress(broadcastAddress);
+        Global.nimPackets.add(nimPacket);
+    }
 
-            Log.e(TAG, "------ CpuInfo " + getStringFromInputStream(is));
-        } catch (IOException e) {
-            Log.e(TAG, "------ getCpuInfo " + e.getMessage());
+    public static void fillNIRMPacket(int type, String sourceAddress, InetAddress destAddress) {
+        nirmPacket.setPacketType(type);
+        nirmPacket.setSourceAddress(sourceAddress);
+        nirmPacket.setDestinationAddress(destAddress);
+        Global.nirmPackets.add(nirmPacket);
+    }
+
+    public static void fillNIUMPacket(int type, String nodeID, double queueWaiting, double availableMemory, double availableBattery, InetAddress destAddress) {
+        niumPacket.setPacketType(type);
+        niumPacket.setNodeID(nodeID);
+        niumPacket.setQueueWaitingTime(queueWaiting);
+        niumPacket.setAvailableMemory(availableMemory);
+        niumPacket.setAvailableBatteryPower(availableBattery);
+        niumPacket.setDestAddress(destAddress);
+        Global.niumPackets.add(niumPacket);
+    }
+
+    /**
+     * Methods for calculating memory
+     *
+     * @return
+     */
+    private static double getAvailMemory() {
+        return (double) Runtime.getRuntime().freeMemory();
+    }
+
+    private long getRAMInfo() {
+        long totalRamValue = totalRamMemorySize();
+        long freeRamValue = freeRamMemorySize();
+        long usedRamValue = totalRamValue - freeRamValue;
+        return usedRamValue;
+    }
+
+    private long getInternalMemInfo() {
+        long totalInternalValue = getTotalInternalMemorySize();
+        long freeInternalValue = getAvailableInternalMemorySize();
+        long usedInternalValue = totalInternalValue - freeInternalValue;
+        return usedInternalValue;
+    }
+
+    private long getExternalMemInfo() {
+        long totalExternalValue = getTotalExternalMemorySize();
+        long freeExternalValue = getAvailableExternalMemorySize();
+        long usedExternalValue = totalExternalValue - freeExternalValue;
+        return usedExternalValue;
+    }
+
+    private long freeRamMemorySize() {
+        ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+        ActivityManager activityManager = (ActivityManager) SngltonClass.get().getApplicationContext().getSystemService(ACTIVITY_SERVICE);
+        activityManager.getMemoryInfo(mi);
+        long availableMegs = mi.availMem / 1048576L;
+
+        return availableMegs;
+    }
+
+    private long totalRamMemorySize() {
+        ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+        ActivityManager activityManager = (ActivityManager) SngltonClass.get().getApplicationContext().getSystemService(ACTIVITY_SERVICE);
+        activityManager.getMemoryInfo(mi);
+        long availableMegs = mi.totalMem;
+        return availableMegs;
+    }
+
+    public static boolean externalMemoryAvailable() {
+        return android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED);
+    }
+
+    public static long getAvailableInternalMemorySize() {
+        File path = Environment.getDataDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long blockSize = stat.getBlockSizeLong();
+        long availableBlocks = stat.getAvailableBlocksLong();
+        return availableBlocks * blockSize;
+    }
+
+    public static long getTotalInternalMemorySize() {
+        File path = Environment.getDataDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long blockSize = stat.getBlockSizeLong();
+        long totalBlocks = stat.getBlockCountLong();
+        return totalBlocks * blockSize;
+    }
+
+    public static long getAvailableExternalMemorySize() {
+        if (externalMemoryAvailable()) {
+            File path = Environment.getExternalStorageDirectory();
+            StatFs stat = new StatFs(path.getPath());
+            long blockSize = stat.getBlockSizeLong();
+            long availableBlocks = stat.getBlockCountLong();
+            return availableBlocks * blockSize;
+        } else {
+            return 0;
         }
+    }
+
+    public static long getTotalExternalMemorySize() {
+        if (externalMemoryAvailable()) {
+            File path = Environment.getExternalStorageDirectory();
+            StatFs stat = new StatFs(path.getPath());
+            long blockSize = stat.getBlockSizeLong();
+            long totalBlocks = stat.getBlockCountLong();
+            return totalBlocks * blockSize;
+        } else {
+            return 0;
+        }
+    }
+
+    public static String formatSize(long bytes) {
+
+        final int unit = 1024;
+        if (bytes < unit)
+            return bytes + " B";
+        double result = bytes;
+        final String unitsToUse = ("K") + "MGTPE";
+        int i = 0;
+        final int unitsCount = unitsToUse.length();
+        while (true) {
+            result /= unit;
+            if (result < unit)
+                break;
+            // check if we can go further:
+            if (i == unitsCount - 1)
+                break;
+            ++i;
+        }
+        final StringBuilder sb = new StringBuilder(9);
+        sb.append(String.format("%.1f ", result));
+        sb.append(unitsToUse.charAt(i));
+        sb.append('B');
+        final String resultStr = sb.toString();
+        return resultStr;
+
+//        int unit = 1024;
+//        if (bytes < unit) return bytes + " B";
+//        int exp = (int) (Math.log(bytes) / Math.log(unit));
+//        String pre = ("KMGTPE").charAt(exp-1) + ("");
+//        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+//        String[] types = {"kb", "Mb", "GB", "TB", "PB", "EB"};
+//        int unit = 1024;
+//        if (bytes < unit) return bytes + "bytes";
+//        int exp = (int) (Math.log(bytes) / Math.log(unit));
+//        String result = String.format("%.1f ", bytes / Math.pow(unit, exp)) + types[exp - 1];
+//        return  result;
+//            if (size <= 0)
+//                return "0";
+//
+//            final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+//            int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+//
+//            return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
+//        String suffix = null;
+//
+//        if (size >= 1024) {
+//            suffix = " KB";
+//            size /= 1024;
+//            if (size >= 1024 * 1024) {
+//                suffix = " MB";
+//                size /= 1024 * 1024;
+//                if (size >= 1024 * 1024 * 1024) {
+//                    suffix = " GB";
+//                    size /= 1024 * 1024 * 1024;
+//                }
+//            }
+//        }
+//
+//        StringBuilder resultBuffer = new StringBuilder(Long.toString(size));
+//
+//        int commaOffset = resultBuffer.length() - 3;
+//        while (commaOffset > 0) {
+//            resultBuffer.insert(commaOffset, ',');
+//            commaOffset -= 3;
+//        }
+//        if (suffix != null) resultBuffer.append(suffix);
+//        return resultBuffer.toString();
+    }
+
+    private String returnToDecimalPlaces(long values) {
+        DecimalFormat df = new DecimalFormat("#.00");
+        return df.format(values);
     }
 
     public void getMemoryInfo() {
@@ -292,6 +441,48 @@ public class DiscoveryAndMonitoringManager {
         }
     }
 
+    /**
+     * Methods for retrieving CPU information
+     *
+     * @return
+     */
+
+    public static double getCurrentCPUSpeed() {
+        String currSpeed = null;
+        try {
+            currSpeed = exCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        assert currSpeed != null;
+        double currentSpeed = Double.parseDouble(currSpeed);
+        currentSpeed = currentSpeed / 1000000;
+        return currentSpeed;
+    }
+
+    public double getMaxCPUSpeed() {
+        String maxSpeed = null;
+        try {
+            maxSpeed = exCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        assert maxSpeed != null;
+        double maximumSpeed = Double.parseDouble(maxSpeed);
+        maximumSpeed = maximumSpeed / 1000000;
+        return maximumSpeed;
+    }
+
+    public void getCpuInfo() {
+        try {
+            Process proc = Runtime.getRuntime().exec("cat /proc/cpuinfo");
+            InputStream is = proc.getInputStream();
+
+            Log.e(TAG, "------ CpuInfo " + getStringFromInputStream(is));
+        } catch (IOException e) {
+            Log.e(TAG, "------ getCpuInfo " + e.getMessage());
+        }
+    }
 
     private static String getStringFromInputStream(InputStream is) {
         StringBuilder sb = new StringBuilder();
@@ -316,64 +507,6 @@ public class DiscoveryAndMonitoringManager {
         }
 
         return sb.toString();
-    }
-
-//    public static void fillNIMPacket(int type, String id, double cpi, double cct, InetAddress broadcastAddress) {
-//        //
-//        nimPacket.setNodeID(id);
-//        nimPacket.setPacketType(type);
-//        nimPacket.setCCT(cct);
-//        nimPacket.setCPI(cpi);
-//        nimPacket.setBroadcastAddress(broadcastAddress);
-//        Global.nimPackets.add(nimPacket);
-//    }
-
-    public static void fillNIRMPacket(int type, String sourceAddress, InetAddress destAddress) {
-        nirmPacket.setPacketType(type);
-        nirmPacket.setSourceAddress(sourceAddress);
-        nirmPacket.setDestinationAddress(destAddress);
-        Global.nirmPackets.add(nirmPacket);
-    }
-
-    public static void fillNIUMPacket(int type, String nodeID, double queueWaiting, double availableMemory, double availableBattery, InetAddress destAddress) {
-        niumPacket.setPacketType(type);
-        niumPacket.setNodeID(nodeID);
-        niumPacket.setQueueWaitingTime(queueWaiting);
-        niumPacket.setAvailableMemory(availableMemory);
-        niumPacket.setAvailableBatteryPower(availableBattery);
-        niumPacket.setDestAddress(destAddress);
-        Global.niumPackets.add(niumPacket);
-    }
-
-    public static double getCurrentCPUSpeed() {
-        String currSpeed = null;
-        try {
-            currSpeed = exCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        assert currSpeed != null;
-        double currentSpeed = Double.parseDouble(currSpeed);
-        currentSpeed = currentSpeed / 1000000;
-        return currentSpeed;
-    }
-
-    public static double getAvailMemory() {
-        double availMem = Runtime.getRuntime().freeMemory();
-        return availMem;
-    }
-
-    public double getMaxCPUSpeed() {
-        String maxSpeed = null;
-        try {
-            maxSpeed = exCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        assert maxSpeed != null;
-        double maximumSpeed = Double.parseDouble(maxSpeed);
-        maximumSpeed = maximumSpeed / 1000000;
-        return maximumSpeed;
     }
 
 
@@ -430,6 +563,8 @@ public class DiscoveryAndMonitoringManager {
         }
     }
 
+
+    //Method for retrieving battery information
     public static double getBatteryCapacity(Context context) {
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = context.registerReceiver(null, ifilter);
@@ -438,8 +573,30 @@ public class DiscoveryAndMonitoringManager {
         int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
 
         double batteryPct = (level / (float) scale) * 100;
-        Log.e(TAG, "Battery: " + batteryPct + "%");
+        Log.e(TAG, "Available Battery: " + batteryPct + "%");
         return batteryPct;
+    }
+
+    public double getTotalBatteryCapacity(Context context) {
+        Object mPowerProfile;
+        double batteryCapacity = 0;
+        final String POWER_PROFILE_CLASS = "com.android.internal.os.PowerProfile";
+
+        try {
+            mPowerProfile = Class.forName(POWER_PROFILE_CLASS)
+                    .getConstructor(Context.class)
+                    .newInstance(context);
+
+            batteryCapacity = (double) Class
+                    .forName(POWER_PROFILE_CLASS)
+                    .getMethod("getBatteryCapacity")
+                    .invoke(mPowerProfile);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return batteryCapacity;
     }
 
 //    private String getInfo() {

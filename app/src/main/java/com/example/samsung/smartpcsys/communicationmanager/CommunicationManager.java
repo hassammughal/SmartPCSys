@@ -186,17 +186,12 @@ public class CommunicationManager implements Runnable {
 //            }
 //        }
         if (o instanceof NIRMPacket) {
-            Log.e(TAG, "sendPacket Method of NIRM Packet is Called");
             byte[] contents = o.toString().getBytes();
             try {
-
-                Log.e(TAG, "Inside Try block of sendPacket Method of NIRM Packet and size of contents is: " + contents.length);
                 DatagramSocket sokt = new DatagramSocket();
                 sokt.setReuseAddress(true);
                 sokt.setBroadcast(true);
-                Log.e(TAG, "Created socket in sendPacket Method of NIRM Packet");
                 DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIRMPacket) o).getDestinationAddress(), 8888);
-                Log.e(TAG, "Created packet in sendPacket Method of NIRM Packet");
                 sokt.send(packet);
                 Log.e(TAG, ">>>Sent NIRM packet to: " + packet.getAddress().getHostAddress());
                 // sokt.close();
@@ -290,7 +285,7 @@ public class CommunicationManager implements Runnable {
                     pkt.setPort(8888);
                     socket.send(pkt);
                     Log.e(TAG, "Periodic NIM Packet Sent!");
-                    Thread.sleep(12000); // period time for sending, 5sec
+                    Thread.sleep(5000); // period time for sending, 5sec
                 } catch (Exception e) {
                     e.printStackTrace();
                     break;
@@ -298,39 +293,6 @@ public class CommunicationManager implements Runnable {
             }
         }
     }
-
-//    public void sendDiscoveryPacket(byte[] contents) {
-//        final Handler mHandler = new Handler(Looper.getMainLooper());
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                while (true) {
-//                    try {
-//                        Thread.sleep(5000); // period time for sending, 5sec
-//
-//                        mHandler.post(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                DatagramSocket sokt = null;
-//                                try {
-//                                    sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
-//                                    DatagramPacket pkt = new DatagramPacket(contents, contents.length);
-//                                    pkt.setPort(8888);
-//                                    pkt.setAddress(getBroadcastAddress());
-//                                    sokt.send(pkt);
-//                                    Log.e(TAG, "Broadcast Packet Sent!");
-//                                } catch (IOException e) {
-//                                    e.printStackTrace();
-//                                }
-//                            }
-//                        });
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }).start();
-//    }
 
     /**
      * Override method for CommunicationManager
@@ -373,9 +335,6 @@ public class CommunicationManager implements Runnable {
                 skt = new DatagramSocket();
                 skt.setBroadcast(true);
                 //socket.setReuseAddress(true);
-
-
-
                 //Try the 255.255.255.255 first
 //                try {
 //                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,InetAddress.getByName("255.255.255.255"),8888);
@@ -416,7 +375,7 @@ public class CommunicationManager implements Runnable {
                             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcast, 8888);
                             skt.send(sendPacket);
                             Log.e(TAG, ">>> NIM Packet Broadcasted");
-                            Thread.sleep(5000);
+                            Thread.sleep(10000);
                         } catch (Exception ignored) {
                         }
 
@@ -458,5 +417,36 @@ public class CommunicationManager implements Runnable {
         }
         return null;
     }
-
 }
+//    public void sendDiscoveryPacket(byte[] contents) {
+//        final Handler mHandler = new Handler(Looper.getMainLooper());
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                while (true) {
+//                    try {
+//                        Thread.sleep(5000); // period time for sending, 5sec
+//
+//                        mHandler.post(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                DatagramSocket sokt = null;
+//                                try {
+//                                    sokt = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
+//                                    DatagramPacket pkt = new DatagramPacket(contents, contents.length);
+//                                    pkt.setPort(8888);
+//                                    pkt.setAddress(getBroadcastAddress());
+//                                    sokt.send(pkt);
+//                                    Log.e(TAG, "Broadcast Packet Sent!");
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                        });
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }).start();
+//    }

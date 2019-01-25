@@ -1,5 +1,9 @@
 package com.example.samsung.smartpcsys.discoverynmonitoringmanager;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,6 +13,7 @@ import android.util.Log;
 
 import com.example.samsung.smartpcsys.Packets.NIMPacket;
 import com.example.samsung.smartpcsys.Packets.NIRMPacket;
+import com.example.samsung.smartpcsys.Packets.NIUMPacket;
 import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
 import com.example.samsung.smartpcsys.communicationmanager.CommunicationManager;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
@@ -37,6 +42,7 @@ public class DiscoveryAndMonitoringManager {
     private static String androidId = null;
     private static NIMPacket nimPacket;
     private static NIRMPacket nirmPacket;
+    private static NIUMPacket niumPacket;
 
     public void init() {
         androidId = Settings.Secure.getString(SngltonClass.get().getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -45,16 +51,23 @@ public class DiscoveryAndMonitoringManager {
         myAddr = communicationManager.getLocalIpAddr();
         nimPacket = new NIMPacket();
         nirmPacket = new NIRMPacket();
+        niumPacket = new NIUMPacket();
         rtEntry = new RoutingTable();
         rtEntry.setSourceAddress(myAddr);
         rtEntry.setInsertTime(getTime());
         rtEntry.setHostAddress(myAddr);
         Global.rtEntry.add(rtEntry);
-        //fillNIMPacket(1, androidId,);
         Log.e(TAG, "Routing Table Size: " + Global.rtEntry.size());
+//        try {
+//            fillNIMPacket(1, androidId, getMaxCPUSpeed(), getCurrentCPUSpeed(), communicationManager.getBroadcastAddress());
+//            communicationManager.sendPacket(nimPacket);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         getCpuInfo();
         getMemoryInfo();
         getInfo();
+        getBatteryCapacity(SngltonClass.get().getApplicationContext());
         //discoveryPacket();
     }
 
@@ -81,11 +94,11 @@ public class DiscoveryAndMonitoringManager {
         rtEntry1.setInsertTime(getTime());
         rtEntry1.setHostAddress(hostAddr);
         adapter.insertRTEntry(rtEntry1);
-        try {
-            fillNIMPacket(1, androidId, nimPacket.getCPI(), nimPacket.getCCT(), communicationManager.getBroadcastAddress());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            fillNIMPacket(1, androidId, nimPacket.getCPI(), nimPacket.getCCT(), communicationManager.getBroadcastAddress());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         Log.e(TAG, "onDiscRcv: Route inserted to adapter");
 
         //byte[] sendData = "DISCOVERY_RESPONSE".getBytes();
@@ -95,21 +108,31 @@ public class DiscoveryAndMonitoringManager {
 //        nirmPacket.setSourceAddress(myAddr);
 //        nirmPacket.setDestinationAddress(hostAddress);
         fillNIRMPacket(2, myAddr, hostAddress);
+        Log.e(TAG, "onDiscRcv: NIRM Packet sent to Communication Manager, NIRM packet contains: " + nirmPacket.getPacketType());
         communicationManager.sendPacket(nirmPacket);
+
     }
 
     public static void onDiscResRcv(DatagramPacket packet) {
 
         String hostAddr = packet.getAddress().getHostAddress();
+        InetAddress hostAddress = null;
+        try {
+            hostAddress = InetAddress.getByName(packet.getAddress().getHostAddress());
+            Log.e(TAG, "Host Address: " + hostAddress);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
 
         RoutingTable rtEntry2 = new RoutingTable();
         rtEntry2.setSourceAddress(myAddr);
         rtEntry2.setInsertTime(getTime());
         rtEntry2.setHostAddress(hostAddr);
         adapter.insertRTEntry(rtEntry2);
-
         Log.e(TAG, "onDiscResRcv: Route inserted to adapter");
-
+        fillNIUMPacket(3, androidId, 10.0, getAvailMemory(), getBatteryCapacity(SngltonClass.get().getApplicationContext()), hostAddress);
+        communicationManager.sendPacket(niumPacket);
+        Log.e(TAG, "onDiscResRcv: NIUM Packet sent to Communication Manager, NIUM packet contains: " + niumPacket.getPacketType());
     }
 
     public static boolean LookupRoute(String hostAddress) {
@@ -295,15 +318,15 @@ public class DiscoveryAndMonitoringManager {
         return sb.toString();
     }
 
-    public static void fillNIMPacket(int type, String id, double cpi, double cct, InetAddress broadcastAddress) {
-        //
-        nimPacket.setNodeID(id);
-        nimPacket.setPacketType(type);
-        nimPacket.setCCT(cct);
-        nimPacket.setCPI(cpi);
-        nimPacket.setBroadcastAddress(broadcastAddress);
-        Global.nimPackets.add(nimPacket);
-    }
+//    public static void fillNIMPacket(int type, String id, double cpi, double cct, InetAddress broadcastAddress) {
+//        //
+//        nimPacket.setNodeID(id);
+//        nimPacket.setPacketType(type);
+//        nimPacket.setCCT(cct);
+//        nimPacket.setCPI(cpi);
+//        nimPacket.setBroadcastAddress(broadcastAddress);
+//        Global.nimPackets.add(nimPacket);
+//    }
 
     public static void fillNIRMPacket(int type, String sourceAddress, InetAddress destAddress) {
         nirmPacket.setPacketType(type);
@@ -312,7 +335,17 @@ public class DiscoveryAndMonitoringManager {
         Global.nirmPackets.add(nirmPacket);
     }
 
-    public double getCurrentCPUSpeed() {
+    public static void fillNIUMPacket(int type, String nodeID, double queueWaiting, double availableMemory, double availableBattery, InetAddress destAddress) {
+        niumPacket.setPacketType(type);
+        niumPacket.setNodeID(nodeID);
+        niumPacket.setQueueWaitingTime(queueWaiting);
+        niumPacket.setAvailableMemory(availableMemory);
+        niumPacket.setAvailableBatteryPower(availableBattery);
+        niumPacket.setDestAddress(destAddress);
+        Global.niumPackets.add(niumPacket);
+    }
+
+    public static double getCurrentCPUSpeed() {
         String currSpeed = null;
         try {
             currSpeed = exCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
@@ -325,7 +358,7 @@ public class DiscoveryAndMonitoringManager {
         return currentSpeed;
     }
 
-    public double getAvailMemory() {
+    public static double getAvailMemory() {
         double availMem = Runtime.getRuntime().freeMemory();
         return availMem;
     }
@@ -379,7 +412,7 @@ public class DiscoveryAndMonitoringManager {
 //        }
     }
 
-    private String exCommand(String comando) throws IOException {
+    private static String exCommand(String comando) throws IOException {
         try {
             Process process = Runtime.getRuntime().exec(comando);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -395,6 +428,18 @@ public class DiscoveryAndMonitoringManager {
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static double getBatteryCapacity(Context context) {
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = context.registerReceiver(null, ifilter);
+        assert batteryStatus != null;
+        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+
+        double batteryPct = (level / (float) scale) * 100;
+        Log.e(TAG, "Battery: " + batteryPct + "%");
+        return batteryPct;
     }
 
 //    private String getInfo() {

@@ -2,9 +2,10 @@ package com.example.samsung.smartpcsys.Packets;
 
 import android.support.annotation.NonNull;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 
-public class NIMPacket {
+public class NIMPacket implements Serializable {
     private int packetType;
     private String nodeID;
     private double CPI;

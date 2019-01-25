@@ -2,9 +2,10 @@ package com.example.samsung.smartpcsys.Packets;
 
 import android.support.annotation.NonNull;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 
-public class NIRMPacket {
+public class NIRMPacket implements Serializable {
     private int packetType;
     private String sourceAddress;
     private InetAddress destinationAddress;
@@ -36,6 +37,6 @@ public class NIRMPacket {
     @Override
     @NonNull
     public String toString() {
-        return ("PacketType: " + getPacketType() + ", Source Address: " + getSourceAddress() + ", Destination Address: " + getDestinationAddress());
+        return (this.getPacketType() + "|" + this.getSourceAddress() + "|" + this.getDestinationAddress());
     }
 }

@@ -1,61 +1,76 @@
 package com.example.samsung.smartpcsys.activities;
 
 import android.os.Bundle;
-import android.os.Handler;
+import android.support.design.widget.TabLayout;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 
 import com.example.samsung.smartpcsys.R;
-import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
-import com.example.samsung.smartpcsys.communicationmanager.CommunicationManager;
-import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
-import com.example.samsung.smartpcsys.utils.Global;
-import com.example.samsung.smartpcsys.viewmodels.RTViewModel;
-
-import java.util.List;
+import com.example.samsung.smartpcsys.adapters.TabAdapter;
+import com.example.samsung.smartpcsys.fragments.AboutUs;
+import com.example.samsung.smartpcsys.fragments.DevicesListFragment;
+import com.example.samsung.smartpcsys.fragments.MainFragment;
 
 public class MainActivity extends AppCompatActivity {
 
     private String TAG = "MainActivity";
-    private RTViewModel rtViewModel;
-    RecyclerView recyclerView;
-    public static List<RoutingTable> rtEntries;
+    private TabAdapter tabAdapter;
+    private TabLayout tabLayout;
+    private ViewPager viewPager;
+    private int[] tabIcons;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        Thread comMgr = new Thread(CommunicationManager.getInstance());
-        comMgr.start();
-        recyclerView = findViewById(R.id.recyclerview);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        final RoutesAdapter adapter = new RoutesAdapter(Global.rtEntry);
-        recyclerView.setAdapter(adapter);
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
-        final Handler mHandler = new Handler();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(1);
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                adapter.notifyDataSetChanged();
-                            }
-                        });
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
+        init();
     }
+
+    private void init() {
+        tabIcons = new int[]{R.drawable.ic_action_home, R.drawable.ic_action_group, R.drawable.ic_action_account_circle};
+        viewPager = (ViewPager) findViewById(R.id.viewPager);
+        tabLayout = (TabLayout) findViewById(R.id.tabLayout);
+        tabAdapter = new TabAdapter(getSupportFragmentManager(), this);
+        tabAdapter.addFragment(new MainFragment(), "Home", tabIcons[0]);
+        tabAdapter.addFragment(new DevicesListFragment(), "Devices", tabIcons[1]);
+        tabAdapter.addFragment(new AboutUs(), "About Us", tabIcons[2]);
+        viewPager.setAdapter(tabAdapter);
+        tabLayout.setupWithViewPager(viewPager);
+        highLightCurrentTab(0);
+
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                highLightCurrentTab(position);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+            }
+        });
+
+    }
+
+    private void highLightCurrentTab(int position) {
+        for (int i = 0; i < tabLayout.getTabCount(); i++) {
+            TabLayout.Tab tab = tabLayout.getTabAt(i);
+            assert tab != null;
+            tab.setCustomView(null);
+            tab.setCustomView(tabAdapter.getTabView(i));
+        }
+        TabLayout.Tab tab = tabLayout.getTabAt(position);
+        assert tab != null;
+        tab.setCustomView(null);
+        tab.setCustomView(tabAdapter.getSelectedTabView(position));
+    }
+
+
+
+
 }
 //        rtViewModel = ViewModelProviders.of(this).get(RTViewModel.class);
 //        rtViewModel.getRTEntry().observe(this, new Observer<List<RoutingTable>>(){

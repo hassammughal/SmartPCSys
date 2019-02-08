@@ -33,7 +33,7 @@ public class Scheduler {
     }
 
     private String getNodewithMaxSpecs(ArrayList<Node> nodes) {
-        Log.e(TAG, "GetNodewithMaxSpecs called");
+
         String nodeIP = null;
         if (nodes.size() != 0) {
             for (int i = 0; i < nodes.size(); i++) {
@@ -42,11 +42,15 @@ public class Scheduler {
                     String[] rams = nodes.get(j).getTotalRAM().split("\\s+");
                     double ram1 = Double.parseDouble(ram[0]);
                     double ram2 = Double.parseDouble(rams[0]);
-
+                    Log.e(TAG, "Inside For loop of GetNodewithMaxSpecs called");
+                    Log.e(TAG, "Value of ram1: " + ram1 + ", Value of ram2: " + ram2);
                     if (nodes.get(i).getTotalCPUSpeed() >= nodes.get(j).getTotalCPUSpeed() && ram1 >= ram2) {
                         nodeIP = nodes.get(i).getIpAddress();
                         Log.e(TAG, "NodeIP: " + nodeIP);
                         return nodeIP;
+                    } else if (nodes.get(j).getTotalCPUSpeed() >= nodes.get(i).getTotalCPUSpeed() && ram2 >= ram1) {
+                        nodeIP = nodes.get(j).getIpAddress();
+                        Log.e(TAG, "NodeIP: " + nodeIP);
                     }
                 }
             }

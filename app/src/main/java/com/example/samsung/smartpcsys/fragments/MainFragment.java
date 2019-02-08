@@ -41,10 +41,6 @@ import com.example.samsung.smartpcsys.taskqueue.TaskQueue;
 import com.example.samsung.smartpcsys.taskqueuemanager.TaskQueueManager;
 import com.example.samsung.smartpcsys.utils.Utils;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.File;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -123,7 +119,7 @@ public class MainFragment extends Fragment {
         tv_dataFilesName = view.findViewById(R.id.tv_dFilesName);
         tv_dataFileSize = view.findViewById(R.id.tv_dFilesSize);
         btn_submit = view.findViewById(R.id.btn_submitTask);
-        btn_readFile = view.findViewById(R.id.btn_readfile);
+        // btn_readFile = view.findViewById(R.id.btn_readfile);
 
         btn_slctApp.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -199,6 +195,7 @@ public class MainFragment extends Fragment {
                     }
                 }
                 scheduler.Schedule(task, fileLocation, DiscoveryAndMonitoringManager.nodesList);
+
                 //
                 id++;
                 Toast.makeText(getActivity(), "Task Submitted Successfully!", Toast.LENGTH_LONG).show();
@@ -206,53 +203,53 @@ public class MainFragment extends Fragment {
         });
 
 
-        btn_readFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+//        btn_readFile.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
                 //Log.e(TAG,Utils.readFromFile(id-1));
-                String json = Utils.readFromFile(id - 1);
-                try {
-                    JSONObject jsonObject = new JSONObject(json);
-
-                    int taskId = jsonObject.getInt("taskID");
-                    String sourceAddress = jsonObject.getString("sourceAddress");
-                    String priority = jsonObject.getString("priority");
-                    String status = jsonObject.getString("status");
-                    Log.e(TAG, "Values in JSON: taskID: " + taskId + ", SourceAddress: " + sourceAddress + ", priority: " + priority + ", status: " + status);
-
-                    JSONArray jsonArray = jsonObject.getJSONArray("TaskFileDetails");
-                    String taskFileName, taskFileType, taskFileSize, taskFileLocation;
-                    int loc;
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject jsonTaskObject = jsonArray.getJSONObject(i);
-                        taskFileName = jsonTaskObject.getString("taskFileName");
-                        taskFileType = jsonTaskObject.getString("taskFileType");
-                        taskFileSize = jsonTaskObject.getString("taskFileSize");
-                        taskFileLocation = jsonTaskObject.getString("taskFileLocation");
-                        loc = jsonTaskObject.getInt("linesOfCode");
-
-                        Log.e(TAG, "Values in JSONTASKARRAYLIST: TaskFileName: " + taskFileName + ", TaskFileType: " + taskFileType + ", TaskFileSize: " + taskFileSize +
-                                ", TaskFileLocation: " + taskFileLocation + ", LineOfCode: " + loc);
-                    }
-
-                    JSONArray jsonDataArray = jsonObject.getJSONArray("DataFileDetails");
-                    String dataFileName, dataFileType, dataFileSize, dataFileLocation;
-                    for (int j = 0; j < jsonDataArray.length(); j++) {
-                        JSONObject jsonDataObject = jsonDataArray.getJSONObject(j);
-                        dataFileName = jsonDataObject.getString("dataFileName");
-                        dataFileType = jsonDataObject.getString("dataFileType");
-                        dataFileSize = jsonDataObject.getString("dataFileSize");
-                        dataFileLocation = jsonDataObject.getString("dataFileLocation");
-
-                        Log.e(TAG, "Values in JSONDATAARRAYLIST: DataFileName: " + dataFileName + ", DataFileType: " + dataFileType + ", DataFileSize: " + dataFileSize +
-                                ", DataFileLocation: " + dataFileLocation);
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+//                String json = Utils.readFromFile(id - 1);
+//                try {
+//                    JSONObject jsonObject = new JSONObject(json);
+//
+//                    int taskId = jsonObject.getInt("taskID");
+//                    String sourceAddress = jsonObject.getString("sourceAddress");
+//                    String priority = jsonObject.getString("priority");
+//                    String status = jsonObject.getString("status");
+//                    Log.e(TAG, "Values in JSON: taskID: " + taskId + ", SourceAddress: " + sourceAddress + ", priority: " + priority + ", status: " + status);
+//
+//                    JSONArray jsonArray = jsonObject.getJSONArray("TaskFileDetails");
+//                    String taskFileName, taskFileType, taskFileSize, taskFileLocation;
+//                    int loc;
+//                    for (int i = 0; i < jsonArray.length(); i++) {
+//                        JSONObject jsonTaskObject = jsonArray.getJSONObject(i);
+//                        taskFileName = jsonTaskObject.getString("taskFileName");
+//                        taskFileType = jsonTaskObject.getString("taskFileType");
+//                        taskFileSize = jsonTaskObject.getString("taskFileSize");
+//                        taskFileLocation = jsonTaskObject.getString("taskFileLocation");
+//                        loc = jsonTaskObject.getInt("linesOfCode");
+//
+//                        Log.e(TAG, "Values in JSONTASKARRAYLIST: TaskFileName: " + taskFileName + ", TaskFileType: " + taskFileType + ", TaskFileSize: " + taskFileSize +
+//                                ", TaskFileLocation: " + taskFileLocation + ", LineOfCode: " + loc);
+//                    }
+//
+//                    JSONArray jsonDataArray = jsonObject.getJSONArray("DataFileDetails");
+//                    String dataFileName, dataFileType, dataFileSize, dataFileLocation;
+//                    for (int j = 0; j < jsonDataArray.length(); j++) {
+//                        JSONObject jsonDataObject = jsonDataArray.getJSONObject(j);
+//                        dataFileName = jsonDataObject.getString("dataFileName");
+//                        dataFileType = jsonDataObject.getString("dataFileType");
+//                        dataFileSize = jsonDataObject.getString("dataFileSize");
+//                        dataFileLocation = jsonDataObject.getString("dataFileLocation");
+//
+//                        Log.e(TAG, "Values in JSONDATAARRAYLIST: DataFileName: " + dataFileName + ", DataFileType: " + dataFileType + ", DataFileSize: " + dataFileSize +
+//                                ", DataFileLocation: " + dataFileLocation);
+//                    }
+//
+//                } catch (JSONException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
     }
 
     public void openChooser(int i) {

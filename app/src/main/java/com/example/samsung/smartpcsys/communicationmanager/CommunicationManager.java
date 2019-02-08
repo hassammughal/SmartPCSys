@@ -33,6 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.LookupNode;
 import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.LookupRoute;
 import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.compareTime;
 import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.onNIMRcv;
@@ -121,6 +122,9 @@ public class CommunicationManager implements Runnable {
                 if (pktType == 3) {
                     Log.e(TAG, "NIUM Packet is Received!");
                 }
+                if (pktType == 4) {
+                    Log.e(TAG, "TIM Packet is Received!");
+                }
 
                 if (!host.equals(myAddr)) {
                     //See if the packet holds the right command (message)
@@ -144,11 +148,12 @@ public class CommunicationManager implements Runnable {
                             compareTime();
                         }
 
-                        if (pktType == 3 && !LookupRoute(host)) {
+                        if (pktType == 3 && !LookupNode(host)) {
                             Log.e(TAG, ">>> NIUM Packet received from destination address: " + packet.getAddress().getHostAddress());
-                            onNIUMRcv(msg[1], msg[2], msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
+
+                            onNIUMRcv(msg[1], host, msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
                                     Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
-                        } else if (pktType == 3 && LookupRoute(host)) {
+                        } else if (pktType == 3 && LookupNode(host)) {
                             updateNodeInfo(host, Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8]);
                         }
 
@@ -161,7 +166,8 @@ public class CommunicationManager implements Runnable {
                             onNIRMRcv(host, hostAddress);
                         } else if (pktType == 3) {
                             Log.e(TAG, ">>> Else NIUM Packet received from destination address: " + packet.getAddress().getHostAddress());
-                            onNIUMRcv(msg[1], msg[2], msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
+
+                            onNIUMRcv(msg[1], host, msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
                                     Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
                         }
                     }
@@ -303,7 +309,7 @@ public class CommunicationManager implements Runnable {
                     nimPacket.setNodeID(androidId);
                     nimPacket.setPacketType(1);
                     nimPacket.setBroadcastAddress(getBroadcastAddress());
-                    nimPacket.setCCT(discoveryAndMonitoringManager.getMaxCPUSpeed());
+                    nimPacket.setCCT(DiscoveryAndMonitoringManager.getMaxCPUSpeed());
                     nimPacket.setCPI(DiscoveryAndMonitoringManager.getCurrentCPUSpeed());
                     String msg = nimPacket.toString();
                     byte[] uf = msg.getBytes();
@@ -312,7 +318,7 @@ public class CommunicationManager implements Runnable {
                     pkt.setPort(8888);
                     socket.send(pkt);
                     Log.e(TAG, "Periodic NIM Packet Sent!");
-                    Thread.sleep(5000); // period time for sending, 5sec
+                    Thread.sleep(10000); // period time for sending, 5sec
                 } catch (Exception e) {
                     e.printStackTrace();
                     break;
@@ -395,14 +401,14 @@ public class CommunicationManager implements Runnable {
                             nimPacket.setNodeID(androidId);
                             nimPacket.setPacketType(1);
                             nimPacket.setBroadcastAddress(broadcast);
-                            nimPacket.setCCT(discoveryAndMonitoringManager.getMaxCPUSpeed());
-                            nimPacket.setCPI(discoveryAndMonitoringManager.getCurrentCPUSpeed());
+                            nimPacket.setCCT(DiscoveryAndMonitoringManager.getMaxCPUSpeed());
+                            nimPacket.setCPI(DiscoveryAndMonitoringManager.getCurrentCPUSpeed());
                             String msg = nimPacket.toString();
                             byte[] sendData = msg.getBytes();
                             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcast, 8888);
                             skt.send(sendPacket);
                             Log.e(TAG, ">>> NIM Packet Broadcasted");
-                            Thread.sleep(10000);
+                            Thread.sleep(15000);
                         } catch (Exception ignored) {
                         }
 

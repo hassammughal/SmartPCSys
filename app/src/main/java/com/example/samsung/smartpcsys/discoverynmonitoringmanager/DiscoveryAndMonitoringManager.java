@@ -42,20 +42,25 @@ import java.util.Calendar;
 
 import static android.content.Context.ACTIVITY_SERVICE;
 
+/*This class is the key class that has all the methods related to device discovery and monitoring.
+ * Incase of creating further packets related to device discovery and monitoring,
+ * developer needs to initialize the values of packets in this class and to perform particular operation on the packet's parameters
+ * this class should be used.*/
+
 public class DiscoveryAndMonitoringManager {
     private static String TAG = "DiscoveryandMonitoringManager";
-    private static RoutesAdapter adapter;
-    private static String myAddr;
-    private RoutingTable rtEntry = null;
-    private static CommunicationManager communicationManager;
-    private static String androidId = null;
-    private static NIMPacket nimPacket;
-    private static NIRMPacket nirmPacket;
-    private static NIUMPacket niumPacket;
-    public static final ArrayList<Node> nodesList = new ArrayList<>();
+    private static RoutesAdapter adapter;   // this is the adapter in which we perform the operations for showing the list of devices in a recyclerview
+    private static String myAddr;       //Device IP Address
+    private RoutingTable rtEntry = null;    // Instance of routing table class, a routing table entry
+    private static CommunicationManager communicationManager;   // instance of communication manager class, this class has direct communication with communication manager class, as every packet's contents are provided by this class
+    private static String androidId = null;     //device id
+    private static NIMPacket nimPacket;     //a packet used for discovery
+    private static NIRMPacket nirmPacket;   // a packet sent in response of the discovery packet received
+    private static NIUMPacket niumPacket;   // a packet that contains the device's information. For now it is being sent once only, however, we can keep it in handler and send it on every time the values are changed
+    public static final ArrayList<Node> nodesList = new ArrayList<>();  //an arraylist of nodes
 
 
-    public void init() {
+    public void init() {        // this method simply initializes the variables and class instances declared above. It also calls the methods related to device information and to set the device info
         androidId = Settings.Secure.getString(SngltonClass.get().getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
         communicationManager = new CommunicationManager();
         adapter = new RoutesAdapter(Global.rtEntry);
@@ -87,13 +92,13 @@ public class DiscoveryAndMonitoringManager {
 //        }
     }
 
-    public static String getMacAddress() {
+    public static String getMacAddress() {  //this method provides the mac address of the device
         WifiManager wifiManager = (WifiManager) SngltonClass.get().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         WifiInfo wInfo = wifiManager.getConnectionInfo();
         return wInfo.getMacAddress();
     }
 
-    public void setNodeInfo() {
+    public void setNodeInfo() {     //this method is used to set the device information and at it to the node's list
 
         Node node = new Node(androidId, myAddr, getMacAddress(), TaskQueue.taskQueue.size(), getBatteryCapacity(SngltonClass.get().getApplicationContext()), getCurrentCPUSpeed(),
                 formatSize((long) getAvailMemory()), formatSize(getAvailableInternalMemorySize()), getTotalBatteryCapacity(SngltonClass.get().getApplicationContext()), getMaxCPUSpeed(),
@@ -151,6 +156,7 @@ public class DiscoveryAndMonitoringManager {
     public static void onNIUMRcv(String nodeID, String hostAddress, String hostMACAddress, int queueSize, double currentBattery, double currentCPUSpeed, String currentRAM, String currentMemory,
                                  double totalBattery, double totalCPUSpeed, String totalRAM, String totalMemory) {
         Node node = new Node(nodeID, hostAddress, hostMACAddress, queueSize, currentBattery, currentCPUSpeed, currentRAM, currentMemory, totalBattery, totalCPUSpeed, totalRAM, totalMemory);
+        Log.e(TAG, "onNIUMRcv: Node: " + hostAddress + " is being inserted to nodesList");
         nodesList.add(node);
     }
 

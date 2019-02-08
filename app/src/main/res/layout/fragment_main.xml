@@ -151,16 +151,16 @@
         android:textColor="@color/colorPrimary"
         android:background="@android:drawable/btn_default" />
 
-    <Button
-        android:id="@+id/btn_readfile"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/btn_submitTask"
-        android:text="Read JSON"
-        android:layout_marginTop="40dp"
-        android:layout_centerHorizontal="true"
-        android:textSize="20sp"
-        android:textColor="@color/colorPrimary"
-        android:background="@android:drawable/btn_default" />
+    <!--<Button-->
+    <!--android:id="@+id/btn_readfile"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_below="@+id/btn_submitTask"-->
+    <!--android:text="Read JSON"-->
+    <!--android:layout_marginTop="40dp"-->
+    <!--android:layout_centerHorizontal="true"-->
+    <!--android:textSize="20sp"-->
+    <!--android:textColor="@color/colorPrimary"-->
+    <!--android:background="@android:drawable/btn_default" />-->
 
 </RelativeLayout>

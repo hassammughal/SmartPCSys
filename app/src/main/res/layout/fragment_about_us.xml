@@ -9,8 +9,10 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="36sp"
+        android:textSize="26sp"
+        android:padding="5dp"
+        android:textAlignment="center"
         android:layout_gravity="center_horizontal|center_vertical"
-        android:text="TAB 3" />
+        android:text="SmartPCSys - A mobile ad hoc cloud that performs task scheduling, Developed by : MGC Lab, Hankuk University of Foreign Studies, South Korea" />
 
 </FrameLayout>

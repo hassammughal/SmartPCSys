@@ -35,7 +35,10 @@ import java.util.regex.Pattern;
 
 import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.LookupRoute;
 import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.compareTime;
-import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.onDiscResRcv;
+import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.onNIMRcv;
+import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.onNIRMRcv;
+import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.onNIUMRcv;
+import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.updateNodeInfo;
 import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager.updateTime;
 
 /**
@@ -97,7 +100,13 @@ public class CommunicationManager implements Runnable {
                 socket.receive(packet);
 
                 String host = packet.getAddress().getHostAddress();
-
+                InetAddress hostAddress = null;
+                try {
+                    hostAddress = InetAddress.getByName(packet.getAddress().getHostAddress());
+                    Log.e(TAG, "Host Address: " + hostAddress);
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
                 Log.e(TAG, ">>> Packet received from: " + host);
 
                 String message = new String(packet.getData()).trim();
@@ -121,7 +130,7 @@ public class CommunicationManager implements Runnable {
                     if (Global.rtEntry.size() > 1) {
 
                         if (pktType == 1 && !LookupRoute(host)) {
-                            DiscoveryAndMonitoringManager.onDiscRcv(packet);
+                            onNIMRcv(host, hostAddress);
                         } else if (pktType == 1 && LookupRoute(host)) {
                             updateTime(host);
                             compareTime();
@@ -129,19 +138,31 @@ public class CommunicationManager implements Runnable {
 
                         if (pktType == 2 && !LookupRoute(host)) {
                             Log.e(TAG, ">>> NIRM Packet received from destination address: " + packet.getAddress().getHostAddress());
-                            onDiscResRcv(packet);
+                            onNIRMRcv(host, hostAddress);
                         } else if (pktType == 2 && LookupRoute(host)) {
                             updateTime(host);
                             compareTime();
                         }
 
+                        if (pktType == 3 && !LookupRoute(host)) {
+                            Log.e(TAG, ">>> NIUM Packet received from destination address: " + packet.getAddress().getHostAddress());
+                            onNIUMRcv(msg[1], msg[2], msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
+                                    Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
+                        } else if (pktType == 3 && LookupRoute(host)) {
+                            updateNodeInfo(host, Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8]);
+                        }
+
                     } else {
                         if (pktType == 1) {
-                            DiscoveryAndMonitoringManager.onDiscRcv(packet);
+                            onNIMRcv(host, hostAddress);
                             Log.e(TAG, ">>> Else NIM Packet received from destination address: " + packet.getAddress().getHostAddress());
                         } else if (pktType == 2) {
                             Log.e(TAG, ">>> Else NIRM Packet received from destination address: " + packet.getAddress().getHostAddress());
-                            onDiscResRcv(packet);
+                            onNIRMRcv(host, hostAddress);
+                        } else if (pktType == 3) {
+                            Log.e(TAG, ">>> Else NIUM Packet received from destination address: " + packet.getAddress().getHostAddress());
+                            onNIUMRcv(msg[1], msg[2], msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
+                                    Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
                         }
                     }
                 } else {
@@ -210,7 +231,7 @@ public class CommunicationManager implements Runnable {
                 DatagramSocket sokt = new DatagramSocket();
                 sokt.setReuseAddress(true);
                 sokt.setBroadcast(true);
-                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIUMPacket) o).getDestAddress(), 8888);
+                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIUMPacket) o).getHostAddress(), 8888);
                 sokt.send(packet);
                 Log.e(TAG, ">>>Sent NIUM packet to: " + packet.getAddress().getHostAddress());
                 // sokt.close();
@@ -223,11 +244,17 @@ public class CommunicationManager implements Runnable {
             }
         }
         if (o instanceof TIMPacket) {
+            byte[] contents = o.toString().getBytes();
             try {
                 DatagramSocket sokt = new DatagramSocket();
                 sokt.setReuseAddress(true);
                 sokt.setBroadcast(true);
+                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((TIMPacket) o).getDestinationIP(), 8888);
+                sokt.send(packet);
+                Log.e(TAG, ">>>Sent TIM packet to: " + packet.getAddress().getHostAddress());
             } catch (SocketException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }

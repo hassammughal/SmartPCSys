@@ -50,8 +50,52 @@
         android:layout_below="@+id/btn_selectApp"
         android:layout_marginTop="15dp" />
 
+    <!--<TextView-->
+    <!--android:id="@+id/tv_mdFileName"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_alignParentEnd="true"-->
+    <!--android:layout_alignParentStart="true"-->
+    <!--android:layout_below="@+id/btn_selectApp"-->
+    <!--android:layout_marginTop="40dp"-->
+    <!--android:text="File Name"-->
+    <!--android:textAlignment="center"-->
+    <!--android:textSize="20sp"-->
+    <!--android:textStyle="italic" />-->
+
+    <!--<TextView-->
+    <!--android:id="@+id/tv_mdFileSize"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_alignParentStart="true"-->
+    <!--android:layout_marginTop="15dp"-->
+    <!--android:layout_alignParentEnd="true"-->
+    <!--android:layout_below="@+id/tv_mdFileName"-->
+    <!--android:textAlignment="center"-->
+    <!--android:gravity="center_horizontal"-->
+    <!--android:text="File Size" />-->
+
+    <!--<Button-->
+    <!--android:id="@+id/btn_selectMDFile"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_below="@+id/tv_mdFileSize"-->
+    <!--android:text="Select Meta Data File"-->
+    <!--android:layout_marginTop="15dp"-->
+    <!--android:layout_centerHorizontal="true"-->
+    <!--android:textSize="20sp"-->
+    <!--android:textColor="@color/colorPrimary"-->
+    <!--android:background="@android:drawable/btn_default" />-->
+
+    <!--<View-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="4dp"-->
+    <!--android:background="@color/colorPrimary"-->
+    <!--android:layout_below="@+id/btn_selectMDFile"-->
+    <!--android:layout_marginTop="15dp" />-->
+
     <TextView
-        android:id="@+id/tv_mdFileName"
+        android:id="@+id/tv_dFilesName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
@@ -60,51 +104,6 @@
         android:layout_marginTop="40dp"
         android:text="File Name"
         android:textAlignment="center"
-        android:textSize="20sp"
-        android:textStyle="italic" />
-
-    <TextView
-        android:id="@+id/tv_mdFileSize"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_marginTop="15dp"
-        android:layout_alignParentEnd="true"
-        android:layout_below="@+id/tv_mdFileName"
-        android:textAlignment="center"
-        android:gravity="center_horizontal"
-        android:text="File Size" />
-
-    <Button
-        android:id="@+id/btn_selectMDFile"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/tv_mdFileSize"
-        android:text="Select Meta Data File"
-        android:layout_marginTop="15dp"
-        android:layout_centerHorizontal="true"
-        android:textSize="20sp"
-        android:textColor="@color/colorPrimary"
-        android:background="@android:drawable/btn_default" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:background="@color/colorPrimary"
-        android:layout_below="@+id/btn_selectMDFile"
-        android:layout_marginTop="15dp" />
-
-    <TextView
-        android:id="@+id/tv_dFilesName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/btn_selectMDFile"
-        android:layout_marginTop="40dp"
-        android:text="File Name"
-        android:textAlignment="center"
-
         android:textSize="20sp"
         android:textStyle="italic" />
 
@@ -139,5 +138,29 @@
         android:foregroundGravity="bottom"
         android:layout_below="@+id/btn_selectDFiles"
         android:layout_marginTop="20dp" />
+
+    <Button
+        android:id="@+id/btn_submitTask"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btn_selectDFiles"
+        android:text="Submit the Task"
+        android:layout_marginTop="40dp"
+        android:layout_centerHorizontal="true"
+        android:textSize="20sp"
+        android:textColor="@color/colorPrimary"
+        android:background="@android:drawable/btn_default" />
+
+    <Button
+        android:id="@+id/btn_readfile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btn_submitTask"
+        android:text="Read JSON"
+        android:layout_marginTop="40dp"
+        android:layout_centerHorizontal="true"
+        android:textSize="20sp"
+        android:textColor="@color/colorPrimary"
+        android:background="@android:drawable/btn_default" />
 
 </RelativeLayout>

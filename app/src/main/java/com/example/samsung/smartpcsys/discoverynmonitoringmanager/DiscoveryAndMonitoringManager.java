@@ -4,6 +4,8 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
@@ -19,7 +21,9 @@ import com.example.samsung.smartpcsys.Packets.NIRMPacket;
 import com.example.samsung.smartpcsys.Packets.NIUMPacket;
 import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
 import com.example.samsung.smartpcsys.communicationmanager.CommunicationManager;
+import com.example.samsung.smartpcsys.resourcepool.Node;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
+import com.example.samsung.smartpcsys.taskqueue.TaskQueue;
 import com.example.samsung.smartpcsys.utils.Global;
 import com.example.samsung.smartpcsys.utils.SngltonClass;
 
@@ -28,15 +32,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Iterator;
 
 import static android.content.Context.ACTIVITY_SERVICE;
 
@@ -50,6 +52,8 @@ public class DiscoveryAndMonitoringManager {
     private static NIMPacket nimPacket;
     private static NIRMPacket nirmPacket;
     private static NIUMPacket niumPacket;
+    public static final ArrayList<Node> nodesList = new ArrayList<>();
+
 
     public void init() {
         androidId = Settings.Secure.getString(SngltonClass.get().getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -69,6 +73,7 @@ public class DiscoveryAndMonitoringManager {
         getMemoryInfo();
         getInfo();
         getBatteryCapacity(SngltonClass.get().getApplicationContext());
+        setNodeInfo();
         Log.e(TAG, "Total Battery: " + getTotalBatteryCapacity(SngltonClass.get().getApplicationContext()) + " mAh");
         Log.e(TAG, "Available Internal Memory: " + formatSize(getAvailableInternalMemorySize()));
         Log.e(TAG, "Total Internal Memory: " + formatSize(getTotalInternalMemorySize()));
@@ -82,6 +87,20 @@ public class DiscoveryAndMonitoringManager {
 //        }
     }
 
+    public static String getMacAddress() {
+        WifiManager wifiManager = (WifiManager) SngltonClass.get().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wInfo = wifiManager.getConnectionInfo();
+        return wInfo.getMacAddress();
+    }
+
+    public void setNodeInfo() {
+
+        Node node = new Node(androidId, myAddr, getMacAddress(), TaskQueue.taskQueue.size(), getBatteryCapacity(SngltonClass.get().getApplicationContext()), getCurrentCPUSpeed(),
+                formatSize((long) getAvailMemory()), formatSize(getAvailableInternalMemorySize()), getTotalBatteryCapacity(SngltonClass.get().getApplicationContext()), getMaxCPUSpeed(),
+                formatSize(totalRamMemorySize()), formatSize(getTotalInternalMemorySize()));
+        nodesList.add(node);
+    }
+
     public static void updateTime(String hostAddr) {
         int index = getIndex(hostAddr);
         Log.e(TAG, "Index: " + index);
@@ -89,58 +108,72 @@ public class DiscoveryAndMonitoringManager {
         adapter.notifyDataSetChanged();
     }
 
-    public static void onDiscRcv(DatagramPacket packet) {
+    public static void updateNodeInfo(String hostAddr, int queueSize, double currBattery, double currCPUSpeed, String availableRAM, String availableMemory) {
+        int index = getNodeIndex(hostAddr);
+        Log.e(TAG, "Node Index:" + index);
+        nodesList.get(index).setQueueSize(queueSize);
+        nodesList.get(index).setCurrentBattery(currBattery);
+        nodesList.get(index).setCurrentCPUSpeed(currCPUSpeed);
+        nodesList.get(index).setCurrentRAM(availableRAM);
+        nodesList.get(index).setCurrentMemory(availableMemory);
+    }
 
-        String hostAddr = packet.getAddress().getHostAddress();
-        InetAddress hostAddress = null;
-        try {
-            hostAddress = InetAddress.getByName(packet.getAddress().getHostAddress());
-            Log.e(TAG, "Host Address: " + hostAddress);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+    public static void onNIMRcv(String host, InetAddress hostAddress) {
 
         RoutingTable rtEntry1 = new RoutingTable();
         rtEntry1.setSourceAddress(myAddr);
         rtEntry1.setInsertTime(getTime());
-        rtEntry1.setHostAddress(hostAddr);
+        rtEntry1.setHostAddress(host);
         adapter.insertRTEntry(rtEntry1);
-        Log.e(TAG, "onDiscRcv: Route inserted to adapter");
+        Log.e(TAG, "onNIMRcv: Route inserted to adapter");
 
         fillNIRMPacket(2, myAddr, hostAddress);
-        Log.e(TAG, "onDiscRcv: NIRM Packet sent to Communication Manager, NIRM packet contains: " + nirmPacket.getPacketType());
+        Log.e(TAG, "onNIMRcv: NIRM Packet sent to Communication Manager, NIRM packet contains: " + nirmPacket.getPacketType());
         communicationManager.sendPacket(nirmPacket);
     }
 
-    public static void onDiscResRcv(DatagramPacket packet) {
-
-        String hostAddr = packet.getAddress().getHostAddress();
-        InetAddress hostAddress = null;
-        try {
-            hostAddress = InetAddress.getByName(packet.getAddress().getHostAddress());
-            Log.e(TAG, "Host Address: " + hostAddress);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+    public static void onNIRMRcv(String hostAddr, InetAddress hostAddress) {
 
         RoutingTable rtEntry2 = new RoutingTable();
         rtEntry2.setSourceAddress(myAddr);
         rtEntry2.setInsertTime(getTime());
         rtEntry2.setHostAddress(hostAddr);
         adapter.insertRTEntry(rtEntry2);
-        Log.e(TAG, "onDiscResRcv: Route inserted to adapter");
-        fillNIUMPacket(3, androidId, 10.0, getAvailMemory(), getBatteryCapacity(SngltonClass.get().getApplicationContext()), hostAddress);
+        Log.e(TAG, "onNIRMRcv: Route inserted to adapter");
+        fillNIUMPacket(3, androidId, hostAddress, getMacAddress(), TaskQueue.taskQueue.size(), getBatteryCapacity(SngltonClass.get().getApplicationContext()), getCurrentCPUSpeed(),
+                formatSize((long) getAvailMemory()), formatSize(getAvailableInternalMemorySize()), getTotalBatteryCapacity(SngltonClass.get().getApplicationContext()), getMaxCPUSpeed(),
+                formatSize(totalRamMemorySize()), formatSize(getTotalInternalMemorySize()));
         communicationManager.sendPacket(niumPacket);
-        Log.e(TAG, "onDiscResRcv: NIUM Packet sent to Communication Manager, NIUM packet contains: " + niumPacket.getPacketType());
+        Log.e(TAG, "onNIRMRcv: NIUM Packet sent to Communication Manager, NIUM packet contains: " + niumPacket.getPacketType());
+    }
+
+
+    public static void onNIUMRcv(String nodeID, String hostAddress, String hostMACAddress, int queueSize, double currentBattery, double currentCPUSpeed, String currentRAM, String currentMemory,
+                                 double totalBattery, double totalCPUSpeed, String totalRAM, String totalMemory) {
+        Node node = new Node(nodeID, hostAddress, hostMACAddress, queueSize, currentBattery, currentCPUSpeed, currentRAM, currentMemory, totalBattery, totalCPUSpeed, totalRAM, totalMemory);
+        nodesList.add(node);
+    }
+
+    public static boolean LookupNode(String hostAddress) {
+        if (nodesList.size() > 0) {
+            synchronized (nodesList) {
+                for (Node aNodesList : nodesList) {
+                    if (aNodesList.getIpAddress().equals(hostAddress)) {
+                        Log.e(TAG, "NIUM Packet Received from same address");
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     public static boolean LookupRoute(String hostAddress) {
         if (Global.rtEntry.size() > 0) {
             synchronized (Global.rtEntry) {
-                Iterator<RoutingTable> itr = Global.rtEntry.iterator();
-                while (itr.hasNext()) {
-                    if (itr.next().getHostAddress().equals(hostAddress)) {
-                        Log.e(TAG, "Discovery Packet Received from same address");
+                for (RoutingTable aRtEntry : Global.rtEntry) {
+                    if (aRtEntry.getHostAddress().equals(hostAddress)) {
+                        Log.e(TAG, "NIM Packet Received from same address");
                         return true;
                     }
                 }
@@ -202,6 +235,17 @@ public class DiscoveryAndMonitoringManager {
         return index;
     }
 
+    private static int getNodeIndex(String hostAddress) {
+        int index = 0;
+        for (int i = 1; i < nodesList.size(); i++) {
+            if (nodesList.get(i).getIpAddress().equals(hostAddress)) {
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
+
     private static String getDeviceName() {
         String manufacturer = Build.MANUFACTURER;
         String model = Build.MODEL;
@@ -256,13 +300,22 @@ public class DiscoveryAndMonitoringManager {
         Global.nirmPackets.add(nirmPacket);
     }
 
-    public static void fillNIUMPacket(int type, String nodeID, double queueWaiting, double availableMemory, double availableBattery, InetAddress destAddress) {
+    public static void fillNIUMPacket(int type, String nodeID, InetAddress hostAddress, String hostMACAddress, int queueSize, double availableBattery, double currCPUSpeed, String currentRAM,
+                                      String availableMemory, double totalBattery, double totalCPUSpeed, String totalRAM, String totalMemory) {
         niumPacket.setPacketType(type);
         niumPacket.setNodeID(nodeID);
-        niumPacket.setQueueWaitingTime(queueWaiting);
-        niumPacket.setAvailableMemory(availableMemory);
+        niumPacket.setHostAddress(hostAddress);
+        niumPacket.setMacAddress(hostMACAddress);
+        niumPacket.setQueueSize(queueSize);
         niumPacket.setAvailableBatteryPower(availableBattery);
-        niumPacket.setDestAddress(destAddress);
+        niumPacket.setCurrCPUSpeed(currCPUSpeed);
+        niumPacket.setCurrentRAM(currentRAM);
+        niumPacket.setAvailableMemory(availableMemory);
+        niumPacket.setTotalBattery(totalBattery);
+        niumPacket.setTotalCPUSpeed(totalCPUSpeed);
+        niumPacket.setTotalRAM(totalRAM);
+        niumPacket.setTotalMemory(totalMemory);
+
         Global.niumPackets.add(niumPacket);
     }
 
@@ -305,7 +358,7 @@ public class DiscoveryAndMonitoringManager {
         return availableMegs;
     }
 
-    private long totalRamMemorySize() {
+    private static long totalRamMemorySize() {
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
         ActivityManager activityManager = (ActivityManager) SngltonClass.get().getApplicationContext().getSystemService(ACTIVITY_SERVICE);
         activityManager.getMemoryInfo(mi);
@@ -357,80 +410,6 @@ public class DiscoveryAndMonitoringManager {
         }
     }
 
-    public static String formatSize(long bytes) {
-
-        final int unit = 1024;
-        if (bytes < unit)
-            return bytes + " B";
-        double result = bytes;
-        final String unitsToUse = ("K") + "MGTPE";
-        int i = 0;
-        final int unitsCount = unitsToUse.length();
-        while (true) {
-            result /= unit;
-            if (result < unit)
-                break;
-            // check if we can go further:
-            if (i == unitsCount - 1)
-                break;
-            ++i;
-        }
-        final StringBuilder sb = new StringBuilder(9);
-        sb.append(String.format("%.1f ", result));
-        sb.append(unitsToUse.charAt(i));
-        sb.append('B');
-        final String resultStr = sb.toString();
-        return resultStr;
-
-//        int unit = 1024;
-//        if (bytes < unit) return bytes + " B";
-//        int exp = (int) (Math.log(bytes) / Math.log(unit));
-//        String pre = ("KMGTPE").charAt(exp-1) + ("");
-//        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
-//        String[] types = {"kb", "Mb", "GB", "TB", "PB", "EB"};
-//        int unit = 1024;
-//        if (bytes < unit) return bytes + "bytes";
-//        int exp = (int) (Math.log(bytes) / Math.log(unit));
-//        String result = String.format("%.1f ", bytes / Math.pow(unit, exp)) + types[exp - 1];
-//        return  result;
-//            if (size <= 0)
-//                return "0";
-//
-//            final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
-//            int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-//
-//            return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
-//        String suffix = null;
-//
-//        if (size >= 1024) {
-//            suffix = " KB";
-//            size /= 1024;
-//            if (size >= 1024 * 1024) {
-//                suffix = " MB";
-//                size /= 1024 * 1024;
-//                if (size >= 1024 * 1024 * 1024) {
-//                    suffix = " GB";
-//                    size /= 1024 * 1024 * 1024;
-//                }
-//            }
-//        }
-//
-//        StringBuilder resultBuffer = new StringBuilder(Long.toString(size));
-//
-//        int commaOffset = resultBuffer.length() - 3;
-//        while (commaOffset > 0) {
-//            resultBuffer.insert(commaOffset, ',');
-//            commaOffset -= 3;
-//        }
-//        if (suffix != null) resultBuffer.append(suffix);
-//        return resultBuffer.toString();
-    }
-
-    private String returnToDecimalPlaces(long values) {
-        DecimalFormat df = new DecimalFormat("#.00");
-        return df.format(values);
-    }
-
     public void getMemoryInfo() {
         try {
             Process proc = Runtime.getRuntime().exec("cat /proc/meminfo");
@@ -460,7 +439,7 @@ public class DiscoveryAndMonitoringManager {
         return currentSpeed;
     }
 
-    public double getMaxCPUSpeed() {
+    public static double getMaxCPUSpeed() {
         String maxSpeed = null;
         try {
             maxSpeed = exCommand("cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
@@ -577,7 +556,7 @@ public class DiscoveryAndMonitoringManager {
         return batteryPct;
     }
 
-    public double getTotalBatteryCapacity(Context context) {
+    public static double getTotalBatteryCapacity(Context context) {
         Object mPowerProfile;
         double batteryCapacity = 0;
         final String POWER_PROFILE_CLASS = "com.android.internal.os.PowerProfile";
@@ -599,6 +578,79 @@ public class DiscoveryAndMonitoringManager {
         return batteryCapacity;
     }
 
+    public static String formatSize(long bytes) {
+
+        final int unit = 1024;
+        if (bytes < unit)
+            return bytes + " B";
+        double result = bytes;
+        final String unitsToUse = ("K") + "MGTPE";
+        int i = 0;
+        final int unitsCount = unitsToUse.length();
+        while (true) {
+            result /= unit;
+            if (result < unit)
+                break;
+            // check if we can go further:
+            if (i == unitsCount - 1)
+                break;
+            ++i;
+        }
+        final StringBuilder sb = new StringBuilder(9);
+        sb.append(String.format("%.1f ", result));
+        sb.append(unitsToUse.charAt(i));
+        sb.append('B');
+        final String resultStr = sb.toString();
+        return resultStr;
+    }
+
+    private String returnToDecimalPlaces(long values) {
+        DecimalFormat df = new DecimalFormat("#.00");
+        return df.format(values);
+    }
+}
+//    int unit = 1024;
+//        if (bytes < unit) return bytes + " B";
+//        int exp = (int) (Math.log(bytes) / Math.log(unit));
+//        String pre = ("KMGTPE").charAt(exp-1) + ("");
+//        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+//        String[] types = {"kb", "Mb", "GB", "TB", "PB", "EB"};
+//        int unit = 1024;
+//        if (bytes < unit) return bytes + "bytes";
+//        int exp = (int) (Math.log(bytes) / Math.log(unit));
+//        String result = String.format("%.1f ", bytes / Math.pow(unit, exp)) + types[exp - 1];
+//        return  result;
+//            if (size <= 0)
+//                return "0";
+//
+//            final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+//            int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+//
+//            return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
+//        String suffix = null;
+//
+//        if (size >= 1024) {
+//            suffix = " KB";
+//            size /= 1024;
+//            if (size >= 1024 * 1024) {
+//                suffix = " MB";
+//                size /= 1024 * 1024;
+//                if (size >= 1024 * 1024 * 1024) {
+//                    suffix = " GB";
+//                    size /= 1024 * 1024 * 1024;
+//                }
+//            }
+//        }
+//
+//        StringBuilder resultBuffer = new StringBuilder(Long.toString(size));
+//
+//        int commaOffset = resultBuffer.length() - 3;
+//        while (commaOffset > 0) {
+//            resultBuffer.insert(commaOffset, ',');
+//            commaOffset -= 3;
+//        }
+//        if (suffix != null) resultBuffer.append(suffix);
+//        return resultBuffer.toString();
 //    private String getInfo() {
 //        StringBuilder sb = new StringBuilder();
 //        sb.append("abi: ").append(Build.SUPPORTED_ABIS).append("\n");
@@ -619,4 +671,3 @@ public class DiscoveryAndMonitoringManager {
 //        return String.valueOf(Log.e(TAG,"CPU INFO: "+sb.toString()));
 //    }
 
-}

@@ -1,6 +1,7 @@
 package com.example.samsung.smartpcsys.activities;
 
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -10,6 +11,8 @@ import com.example.samsung.smartpcsys.adapters.TabAdapter;
 import com.example.samsung.smartpcsys.fragments.AboutUs;
 import com.example.samsung.smartpcsys.fragments.DevicesListFragment;
 import com.example.samsung.smartpcsys.fragments.MainFragment;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,6 +40,18 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setAdapter(tabAdapter);
         tabLayout.setupWithViewPager(viewPager);
         highLightCurrentTab(0);
+
+        File mFolder = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/MetaData");
+        File rFolder = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Receive");
+        File aFolder = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Application");
+        File dFolder = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Data");
+
+        if (!mFolder.exists() && !rFolder.exists() && !aFolder.exists() && !dFolder.exists()) {
+            mFolder.mkdirs();
+            rFolder.mkdirs();
+            aFolder.mkdirs();
+            dFolder.mkdirs();
+        }
 
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override

@@ -1,4 +1,4 @@
-package com.example.samsung.smartpcsys.Packets;
+package com.example.samsung.smartpcsys.packets;
 
 import android.support.annotation.NonNull;
 

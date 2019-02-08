@@ -1,8 +1,8 @@
 package com.example.samsung.smartpcsys.utils;
 
-import com.example.samsung.smartpcsys.Packets.NIMPacket;
-import com.example.samsung.smartpcsys.Packets.NIRMPacket;
-import com.example.samsung.smartpcsys.Packets.NIUMPacket;
+import com.example.samsung.smartpcsys.packets.NIMPacket;
+import com.example.samsung.smartpcsys.packets.NIRMPacket;
+import com.example.samsung.smartpcsys.packets.NIUMPacket;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
 
 import java.util.ArrayList;

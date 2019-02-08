@@ -16,11 +16,11 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.example.samsung.smartpcsys.Packets.NIMPacket;
-import com.example.samsung.smartpcsys.Packets.NIRMPacket;
-import com.example.samsung.smartpcsys.Packets.NIUMPacket;
 import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
 import com.example.samsung.smartpcsys.communicationmanager.CommunicationManager;
+import com.example.samsung.smartpcsys.packets.NIMPacket;
+import com.example.samsung.smartpcsys.packets.NIRMPacket;
+import com.example.samsung.smartpcsys.packets.NIUMPacket;
 import com.example.samsung.smartpcsys.resourcepool.Node;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
 import com.example.samsung.smartpcsys.taskqueue.TaskQueue;

@@ -22,34 +22,21 @@ public class RoutesAdapter extends RecyclerView.Adapter<RoutesAdapter.MyViewHold
         Global.rtEntry = rtEntry;
     }
 
-    public void insertRTEntry(RoutingTable insertRoute) {
+    public void insertRTEntry(RoutingTable insertRoute) {   // to insert a route in the routing table list
 //        SPSDiffUtilCallBack diffUtilCallBack = new SPSDiffUtilCallBack(rtEntry,insertList);
 //        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallBack);
         //dataSource.clear();
         Global.rtEntry.add(insertRoute);
-        notifyDataSetChanged();
+        notifyDataSetChanged();     //changes the recyclerview's view
         //diffResult.dispatchUpdatesTo(this);
     }
 
-    public void removeRTEntry(int index) {
+    public void removeRTEntry(int index) {  //to remove particular route on particular index in routing table
         Global.rtEntry.remove(index);
         notifyItemRemoved(index);
         notifyItemRangeChanged(index, Global.rtEntry.size());
         notifyDataSetChanged();
     }
-
-//    public void updateRTEntry (List<RoutingTable> newList){
-//        SPSDiffUtilCallBack diffUtilCallBack = new SPSDiffUtilCallBack(rtEntry,newList);
-//        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallBack);
-//        Log.e(TAG, "List Size: "+rtEntry.size());
-//        rtEntry.clear();
-//        notifyDataSetChanged();
-//        rtEntry = new ArrayList<>(newList);
-//        notifyDataSetChanged();
-//        Log.e(TAG, "After List Size: "+rtEntry.size());
-//        Log.e(TAG, "NewList Size: "+newList.size());
-//        diffResult.dispatchUpdatesTo(this);
-//    }
 
     @NonNull
     @Override
@@ -61,7 +48,7 @@ public class RoutesAdapter extends RecyclerView.Adapter<RoutesAdapter.MyViewHold
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder myViewHolder, int i) {
-
+    // to set the sourceAddress, hostAddress and time on each routing table route entry
         myViewHolder.tv_sourceAddress.setText("My IP Address: " + Global.rtEntry.get(i).getSourceAddress());
         myViewHolder.tv_destAddress.setText("Host IP Address: " + Global.rtEntry.get(i).getHostAddress());
         myViewHolder.tv_time.setText("Current Time: " + Global.rtEntry.get(i).getInsertTime());
@@ -82,3 +69,15 @@ public class RoutesAdapter extends RecyclerView.Adapter<RoutesAdapter.MyViewHold
         }
     }
 }
+//    public void updateRTEntry (List<RoutingTable> newList){
+//        SPSDiffUtilCallBack diffUtilCallBack = new SPSDiffUtilCallBack(rtEntry,newList);
+//        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallBack);
+//        Log.e(TAG, "List Size: "+rtEntry.size());
+//        rtEntry.clear();
+//        notifyDataSetChanged();
+//        rtEntry = new ArrayList<>(newList);
+//        notifyDataSetChanged();
+//        Log.e(TAG, "After List Size: "+rtEntry.size());
+//        Log.e(TAG, "NewList Size: "+newList.size());
+//        diffResult.dispatchUpdatesTo(this);
+//    }

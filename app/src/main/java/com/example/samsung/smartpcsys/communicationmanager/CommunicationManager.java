@@ -44,6 +44,9 @@ import static com.example.samsung.smartpcsys.discoverynmonitoringmanager.Discove
 
 /**
  * Created by Hassam Mughal on 2019-01-08.
+ * this class is one of the key components that is used for every communication between devices
+ * Packets sending and receiving are performed by this class
+ * It performs the communication using UDP Sockets and Datagram packets
  */
 
 public class CommunicationManager implements Runnable {
@@ -95,24 +98,24 @@ public class CommunicationManager implements Runnable {
                 Log.e(TAG, ">>>Ready to receive packets!");
 
                 //Receive a packet
-                byte[] recvBuf = new byte[1500];
-                final DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);
+                byte[] recvBuf = new byte[1024];    //default packet byte size
+                final DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);  //creating a datagram packet of the buffer size
 
-                socket.receive(packet);
+                socket.receive(packet);     //receiving the packet using the UDP socket
 
-                String host = packet.getAddress().getHostAddress();
+                String host = packet.getAddress().getHostAddress();     //getting host address from where the packet is received
                 InetAddress hostAddress = null;
                 try {
-                    hostAddress = InetAddress.getByName(packet.getAddress().getHostAddress());
+                    hostAddress = InetAddress.getByName(packet.getAddress().getHostAddress());  //converting the string host address to inetAddress
                     Log.e(TAG, "Host Address: " + hostAddress);
                 } catch (UnknownHostException e) {
                     e.printStackTrace();
                 }
                 Log.e(TAG, ">>> Packet received from: " + host);
 
-                String message = new String(packet.getData()).trim();
-                String[] msg = message.split(Pattern.quote("|"));
-                int pktType = Integer.parseInt(msg[0]);
+                String message = new String(packet.getData()).trim();   //fetching the data present in the packet
+                String[] msg = message.split(Pattern.quote("|"));   //spliting the string data
+                int pktType = Integer.parseInt(msg[0]); //getting the packet type id
                 if (pktType == 1) {
                     Log.e(TAG, "NIM Packet is Received!");
                 }
@@ -126,26 +129,24 @@ public class CommunicationManager implements Runnable {
                     Log.e(TAG, "TIM Packet is Received!");
                 }
 
-                if (!host.equals(myAddr)) {
+                if (!host.equals(myAddr)) {     // if the hostAddress in the packet is not my own IP Address
                     //See if the packet holds the right command (message)
 
-
                     Log.e(TAG, ">>>Packet received; Data: " + message);
-                    if (Global.rtEntry.size() > 1) {
-
-                        if (pktType == 1 && !LookupRoute(host)) {
-                            onNIMRcv(host, hostAddress);
-                        } else if (pktType == 1 && LookupRoute(host)) {
-                            updateTime(host);
-                            compareTime();
+                    if (Global.rtEntry.size() > 1) {    //if the routing table has more than 1 routing entry, because the own entry is always added initially, thus to get rest of the devices address
+                        if (pktType == 1 && !LookupRoute(host)) {   // if the packet received is NIM/discovery packet and it is not present in the routing table
+                            onNIMRcv(host, hostAddress);    // insert the new entry (device)
+                        } else if (pktType == 1 && LookupRoute(host)) { //if the entry(device) is already present in the routing table
+                            updateTime(host);   //update the time of the host device
+                            compareTime();  //keep comparing the time of the devices connected and remove if they are unavailable for more than 15 seconds
                         }
 
-                        if (pktType == 2 && !LookupRoute(host)) {
+                        if (pktType == 2 && !LookupRoute(host)) {   //if the packet received is of NIRM/Discovery Reply packet type, and the hostAddress is not present in the routing table
                             Log.e(TAG, ">>> NIRM Packet received from destination address: " + packet.getAddress().getHostAddress());
-                            onNIRMRcv(host, hostAddress);
-                        } else if (pktType == 2 && LookupRoute(host)) {
-                            updateTime(host);
-                            compareTime();
+                            onNIRMRcv(host, hostAddress);   //insert the host to routing table
+                        } else if (pktType == 2 && LookupRoute(host)) { //if packet received is NIRM type and the route is already in the routing table
+                            updateTime(host);   //update the time of the routing table entry
+                            compareTime();      //keep comparing the time of the devices connected and remove if they are unavailable for more than 15 seconds
                         }
 
                         if (pktType == 3 && !LookupNode(host)) {

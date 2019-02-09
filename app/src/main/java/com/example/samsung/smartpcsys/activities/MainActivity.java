@@ -17,16 +17,16 @@ import java.io.File;
 public class MainActivity extends AppCompatActivity {
 
     private String TAG = "MainActivity";
-    private TabAdapter tabAdapter;
-    private TabLayout tabLayout;
-    private ViewPager viewPager;
-    private int[] tabIcons;
+    private TabAdapter tabAdapter;  //adapter for tabs
+    private TabLayout tabLayout;   //layout for tabs
+    private ViewPager viewPager;    //for swiping among the tabs
+    private int[] tabIcons; //tab icons
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        init();
+        init(); //initialize the layout items
     }
 
     private void init() {
@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
         tabLayout.setupWithViewPager(viewPager);
         highLightCurrentTab(0);
 
+        //to create the folders for each type of files
         File mFolder = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/MetaData");
         File rFolder = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Receive");
         File aFolder = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Application");

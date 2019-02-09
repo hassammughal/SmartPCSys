@@ -17,6 +17,9 @@ import com.example.samsung.smartpcsys.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/** This is an adapter class that is used to set the tab views in the fragments
+ * it has most of the values as default
+ * **/
 public class TabAdapter extends FragmentStatePagerAdapter {
     private final List<Fragment> mFragmentList = new ArrayList<>();
     private final List<String> mFragmentTitleList = new ArrayList<>();

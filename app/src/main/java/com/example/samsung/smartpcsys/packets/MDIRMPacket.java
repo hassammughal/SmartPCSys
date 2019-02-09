@@ -1,4 +1,4 @@
-package com.example.samsung.smartpcsys.Packets;
+package com.example.samsung.smartpcsys.packets;
 
 import java.net.InetAddress;
 

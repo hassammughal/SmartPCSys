@@ -6,8 +6,8 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.example.samsung.smartpcsys.Packets.TIMPacket;
 import com.example.samsung.smartpcsys.communicationmanager.CommunicationManager;
+import com.example.samsung.smartpcsys.packets.TIMPacket;
 import com.example.samsung.smartpcsys.resourcepool.Tasks;
 import com.example.samsung.smartpcsys.utils.SngltonClass;
 import com.example.samsung.smartpcsys.utils.Utils;

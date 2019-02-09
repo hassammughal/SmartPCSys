@@ -149,25 +149,26 @@ public class CommunicationManager implements Runnable {
                             compareTime();      //keep comparing the time of the devices connected and remove if they are unavailable for more than 15 seconds
                         }
 
-                        if (pktType == 3 && !LookupNode(host)) {
+                        if (pktType == 3 && !LookupNode(host)) {    //if packet received is of NIUM type,
                             Log.e(TAG, ">>> NIUM Packet received from destination address: " + packet.getAddress().getHostAddress());
-
+                            // Insert the device hardware details into the device list
                             onNIUMRcv(msg[1], host, msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
                                     Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
-                        } else if (pktType == 3 && LookupNode(host)) {
+                        } else if (pktType == 3 && LookupNode(host)) {  //if packet received is of NIUM packet and the host device information is already present
+                            //Then update the node information
                             updateNodeInfo(host, Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8]);
                         }
 
                     } else {
-                        if (pktType == 1) {
-                            onNIMRcv(host, hostAddress);
+                        if (pktType == 1) { //NIM/discovery Packet received and routing table is empty
+                            onNIMRcv(host, hostAddress);    //insert the route to routing table
                             Log.e(TAG, ">>> Else NIM Packet received from destination address: " + packet.getAddress().getHostAddress());
-                        } else if (pktType == 2) {
+                        } else if (pktType == 2) {  //NIRM/discovery reply packet received and routing table is empty
                             Log.e(TAG, ">>> Else NIRM Packet received from destination address: " + packet.getAddress().getHostAddress());
-                            onNIRMRcv(host, hostAddress);
-                        } else if (pktType == 3) {
+                            onNIRMRcv(host, hostAddress);   //insert the route to routing table
+                        } else if (pktType == 3) {  //NIUM packet received and routing table is empty
                             Log.e(TAG, ">>> Else NIUM Packet received from destination address: " + packet.getAddress().getHostAddress());
-
+                            //insert the device information
                             onNIUMRcv(msg[1], host, msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
                                     Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
                         }
@@ -175,7 +176,7 @@ public class CommunicationManager implements Runnable {
                 } else {
                     Log.e(TAG, "Host IP address in packet is my IP address, so ignored");
                 }
-                Thread.sleep(50);
+                Thread.sleep(50);   //keep receiving every 50 milliseconds
             } catch (Exception ex) {
                 Logger.getLogger(TAG).log(Level.SEVERE, null, ex);
                 break;
@@ -195,6 +196,10 @@ public class CommunicationManager implements Runnable {
         return ret;
     }
 
+    /**
+     * This method receives the packet contents from discovery and monitoring manager class
+     * It creates a packet out of the contents and sends it
+     **/
     public void sendPacket(Object o) {
 
 //        if (o instanceof NIMPacket) {

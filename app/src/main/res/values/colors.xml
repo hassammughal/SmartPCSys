@@ -6,4 +6,5 @@
     <color name="colorWhite">#FFFF</color>
     <color name="colorTextPrimary">#FFFF</color>
     <color name="colorYellow">#DDDE03</color>
+    <color name="colorOrange">#FF4500</color>
 </resources>

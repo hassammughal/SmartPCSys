@@ -8,7 +8,7 @@ import java.net.InetAddress;
 public class NIRMPacket implements Serializable {
     private int packetType;
     private String sourceAddress;
-    private InetAddress destinationAddress;
+    private InetAddress hostAddress;
 
     public int getPacketType() {
         return packetType;
@@ -26,17 +26,17 @@ public class NIRMPacket implements Serializable {
         this.sourceAddress = sourceAddress;
     }
 
-    public InetAddress getDestinationAddress() {
-        return destinationAddress;
+    public InetAddress getHostAddress() {
+        return hostAddress;
     }
 
-    public void setDestinationAddress(InetAddress destinationAddress) {
-        this.destinationAddress = destinationAddress;
+    public void setHostAddress(InetAddress hostAddress) {
+        this.hostAddress = hostAddress;
     }
 
     @Override
     @NonNull
     public String toString() {
-        return (this.getPacketType() + "|" + this.getSourceAddress() + "|" + this.getDestinationAddress());
+        return (this.getPacketType() + "|" + this.getSourceAddress() + "|" + this.getHostAddress());
     }
 }

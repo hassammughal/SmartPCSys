@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.example.samsung.smartpcsys.adapters.RoutesAdapter;
 import com.example.samsung.smartpcsys.discoverynmonitoringmanager.DiscoveryAndMonitoringManager;
+import com.example.samsung.smartpcsys.dispatcher.TaskManager;
 import com.example.samsung.smartpcsys.packets.MDIRMPacket;
 import com.example.samsung.smartpcsys.packets.MIMPacket;
 import com.example.samsung.smartpcsys.packets.MIUMPacket;
@@ -57,6 +58,7 @@ public class CommunicationManager implements Runnable {
     private String myAddr;
     private RoutingTable rtEntry = null;
     private DiscoveryAndMonitoringManager discoveryAndMonitoringManager;
+    private TaskManager taskManager;
 
     public CommunicationManager() {
     }
@@ -78,6 +80,7 @@ public class CommunicationManager implements Runnable {
             socket.setBroadcast(true);
             myAddr = getLocalIpAddr();
             discoveryAndMonitoringManager = new DiscoveryAndMonitoringManager();
+            taskManager = new TaskManager();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -149,7 +152,7 @@ public class CommunicationManager implements Runnable {
                             compareTime();      //keep comparing the time of the devices connected and remove if they are unavailable for more than 15 seconds
                         }
 
-                        if (pktType == 3 && !LookupNode(host)) {    //if packet received is of NIUM type,
+                        if (pktType == 3 && !LookupNode(host)) {    //if packet received is of NIUM type, and the host address is not present in nodes list
                             Log.e(TAG, ">>> NIUM Packet received from destination address: " + packet.getAddress().getHostAddress());
                             // Insert the device hardware details into the device list
                             onNIUMRcv(msg[1], host, msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
@@ -157,6 +160,11 @@ public class CommunicationManager implements Runnable {
                         } else if (pktType == 3 && LookupNode(host)) {  //if packet received is of NIUM packet and the host device information is already present
                             //Then update the node information
                             updateNodeInfo(host, Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8]);
+                        }
+
+                        if (pktType == 4) {
+                            taskManager.onTIMPRcv(host);
+
                         }
 
                     } else {
@@ -171,6 +179,9 @@ public class CommunicationManager implements Runnable {
                             //insert the device information
                             onNIUMRcv(msg[1], host, msg[3], Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8],
                                     Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
+                        } else if (pktType == 4) {
+                            Log.e(TAG, ">>> Else TIMP Packet received from destination address: " + packet.getAddress().getHostAddress());
+                            taskManager.onTIMPRcv(host);
                         }
                     }
                 } else {
@@ -218,14 +229,14 @@ public class CommunicationManager implements Runnable {
 //                e.printStackTrace();
 //            }
 //        }
-        if (o instanceof NIRMPacket) {
-            byte[] contents = o.toString().getBytes();
+        if (o instanceof NIRMPacket) {  //Gets the instance of the NIRM packet object passed to it
+            byte[] contents = o.toString().getBytes();  //Convert the string to bytes
             try {
-                DatagramSocket sokt = new DatagramSocket();
-                sokt.setReuseAddress(true);
-                sokt.setBroadcast(true);
-                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIRMPacket) o).getDestinationAddress(), 8888);
-                sokt.send(packet);
+                DatagramSocket sokt = new DatagramSocket(); //Create the datagram socket
+                sokt.setReuseAddress(true);     //Allows multiple sockets to use the same socket address
+                sokt.setBroadcast(true);    //to enable sending broadcast datagram packets
+                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIRMPacket) o).getHostAddress(), 8888);  //creating the datagram packet with the contents provided
+                sokt.send(packet);  //sends the packet using the UDP Socket's send method
                 Log.e(TAG, ">>>Sent NIRM packet to: " + packet.getAddress().getHostAddress());
                 // sokt.close();
             } catch (UnknownHostException e) {
@@ -236,14 +247,14 @@ public class CommunicationManager implements Runnable {
                 e.printStackTrace();
             }
         }
-        if (o instanceof NIUMPacket) {
+        if (o instanceof NIUMPacket) {      //Gets the instance of the NIUM Packet object passed to it
             Log.e(TAG, "sendPacket Method of NIUM Packet is Called");
-            byte[] contents = o.toString().getBytes();
+            byte[] contents = o.toString().getBytes();  //Convert the string to bytes
             try {
-                DatagramSocket sokt = new DatagramSocket();
-                sokt.setReuseAddress(true);
-                sokt.setBroadcast(true);
-                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIUMPacket) o).getHostAddress(), 8888);
+                DatagramSocket sokt = new DatagramSocket();     //Create the datagram socket
+                sokt.setReuseAddress(true);     //Allows multiple sockets to use the same socket address
+                sokt.setBroadcast(true);        //to enable sending broadcast datagram packets
+                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((NIUMPacket) o).getHostAddress(), 8888);     //creating the datagram packet with the contents provided
                 sokt.send(packet);
                 Log.e(TAG, ">>>Sent NIUM packet to: " + packet.getAddress().getHostAddress());
                 // sokt.close();
@@ -256,19 +267,24 @@ public class CommunicationManager implements Runnable {
             }
         }
         if (o instanceof TIMPacket) {
-            byte[] contents = o.toString().getBytes();
-            try {
-                DatagramSocket sokt = new DatagramSocket();
-                sokt.setReuseAddress(true);
-                sokt.setBroadcast(true);
-                DatagramPacket packet = new DatagramPacket(contents, contents.length, ((TIMPacket) o).getDestinationIP(), 8888);
-                sokt.send(packet);
-                Log.e(TAG, ">>>Sent TIM packet to: " + packet.getAddress().getHostAddress());
-            } catch (SocketException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    byte[] contents = o.toString().getBytes();
+                    try {
+                        DatagramSocket sokt = new DatagramSocket();
+                        sokt.setReuseAddress(true);
+                        sokt.setBroadcast(true);
+                        DatagramPacket packet = new DatagramPacket(contents, contents.length, ((TIMPacket) o).getDestinationIP(), 8888);
+                        sokt.send(packet);
+                        Log.e(TAG, ">>>Sent TIM packet to: " + packet.getAddress().getHostAddress());
+                    } catch (SocketException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
         }
         if (o instanceof MDIRMPacket) {
             try {

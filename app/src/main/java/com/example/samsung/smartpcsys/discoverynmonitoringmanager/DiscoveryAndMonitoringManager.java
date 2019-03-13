@@ -207,15 +207,18 @@ public class DiscoveryAndMonitoringManager {
                                             String host = Global.rtEntry.get(i).getHostAddress();
                                             String currTime = getTime();
                                             Log.e(TAG, "Compare Time try block is called. Insert Time:" + insertTime + " Current Time: " + currTime);
-                                            LocalTime t1 = LocalTime.parse(insertTime);
-                                            LocalTime t2 = LocalTime.parse(currTime);
-                                            Duration duration = Duration.between(t1, t2);
-                                            int pos = getIndex(host);
-                                            Log.e(TAG, "Duration Time: " + duration.getSeconds() + " Host Address: " + host);
-                                            if (duration.getSeconds() > 15) {
-                                                Log.e(TAG, "Index is: " + pos);
-                                                adapter.removeRTEntry(pos);
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                                LocalTime t1 = LocalTime.parse(insertTime);
+                                                LocalTime t2 = LocalTime.parse(currTime);
+                                                Duration duration = Duration.between(t1, t2);
+                                                int pos = getIndex(host);
+                                                Log.e(TAG, "Duration Time: " + duration.getSeconds() + " Host Address: " + host);
+                                                if (duration.getSeconds() > 15) {
+                                                    Log.e(TAG, "Index is: " + pos);
+                                                    adapter.removeRTEntry(pos);
+                                                }
                                             }
+
                                         }
                                     }
                                 }
@@ -302,7 +305,7 @@ public class DiscoveryAndMonitoringManager {
     public static void fillNIRMPacket(int type, String sourceAddress, InetAddress destAddress) {
         nirmPacket.setPacketType(type);
         nirmPacket.setSourceAddress(sourceAddress);
-        nirmPacket.setDestinationAddress(destAddress);
+        nirmPacket.setHostAddress(destAddress);
         Global.nirmPackets.add(nirmPacket);
     }
 

@@ -47,7 +47,9 @@ public class TaskManager {
         }
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        byte[] buf = new byte[1024];
+        int fileSize = (int) source.length();
+        Log.e(TAG, "File Size: " + fileSize);
+        byte[] buf = new byte[fileSize];
         try {
             for (int readNum; (readNum = fis.read(buf)) != -1; ) {
                 bos.write(buf, 0, readNum); //no doubt here is 0
@@ -117,7 +119,7 @@ public class TaskManager {
         return taskFileLocation;
     }
 
-    public void onTaskReceive() {
+    public void onTIMPRcv(String hostAddress) {
 
         Handler handler = new Handler(new Handler.Callback() {
             @Override

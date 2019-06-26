@@ -93,13 +93,14 @@ public class CommunicationManager implements Runnable {
      * displays Log message
      */
 
+    static int packetCout = 0;
     private void recvPacket() {
-
+        packetCout++;
         while (true) {
             try {
                 Log.e(TAG, "My IP Address: " + myAddr);
                 Log.e(TAG, ">>>Ready to receive packets!");
-
+                Log.e(TAG, "Packet Count = " + packetCout);
                 //Receive a packet
                 byte[] recvBuf = new byte[1024];    //default packet byte size
                 final DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);  //creating a datagram packet of the buffer size
@@ -115,6 +116,7 @@ public class CommunicationManager implements Runnable {
                     e.printStackTrace();
                 }
                 Log.e(TAG, ">>> Packet received from: " + host);
+
 
                 String message = new String(packet.getData()).trim();   //fetching the data present in the packet
                 String[] msg = message.split(Pattern.quote("|"));   //spliting the string data
@@ -138,8 +140,10 @@ public class CommunicationManager implements Runnable {
                     Log.e(TAG, ">>>Packet received; Data: " + message);
                     if (Global.rtEntry.size() > 1) {    //if the routing table has more than 1 routing entry, because the own entry is always added initially, thus to get rest of the devices address
                         if (pktType == 1 && !LookupRoute(host)) {   // if the packet received is NIM/discovery packet and it is not present in the routing table
+                            Log.e(TAG, ">>> NIM Packet received from destination address: " + packet.getAddress().getHostAddress());
                             onNIMRcv(host, hostAddress);    // insert the new entry (device)
                         } else if (pktType == 1 && LookupRoute(host)) { //if the entry(device) is already present in the routing table
+                            Log.e(TAG, ">>> NIM Packet received from already present destination address: " + packet.getAddress().getHostAddress());
                             updateTime(host);   //update the time of the host device
                             compareTime();  //keep comparing the time of the devices connected and remove if they are unavailable for more than 15 seconds
                         }
@@ -148,6 +152,7 @@ public class CommunicationManager implements Runnable {
                             Log.e(TAG, ">>> NIRM Packet received from destination address: " + packet.getAddress().getHostAddress());
                             onNIRMRcv(host, hostAddress);   //insert the host to routing table
                         } else if (pktType == 2 && LookupRoute(host)) { //if packet received is NIRM type and the route is already in the routing table
+                            Log.e(TAG, ">>> NIRM Packet received from alread present destination address: " + packet.getAddress().getHostAddress());
                             updateTime(host);   //update the time of the routing table entry
                             compareTime();      //keep comparing the time of the devices connected and remove if they are unavailable for more than 15 seconds
                         }
@@ -159,12 +164,58 @@ public class CommunicationManager implements Runnable {
                                     Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
                         } else if (pktType == 3 && LookupNode(host)) {  //if packet received is of NIUM packet and the host device information is already present
                             //Then update the node information
+                            Log.e(TAG, ">>> NIUM Packet received from already present destination address: " + packet.getAddress().getHostAddress());
                             updateNodeInfo(host, Integer.parseInt(msg[4]), Double.parseDouble(msg[5]), Double.parseDouble(msg[6]), msg[7], msg[8]);
                         }
 
                         if (pktType == 4) {
-                            taskManager.onTIMPRcv(host);
+                            String filePath = msg[2];
+                            Log.e(TAG, ">>> TIM Packet received from destination address: " + packet.getAddress().getHostAddress());
+                            String msgContents = msg[4];
+                            Log.e(TAG, "File Contents: " + msgContents);
 
+//                            try (FileOutputStream fileOuputStream = new FileOutputStream(filePath)){
+//                                fileOuputStream.write(msg[4].getBytes());
+//                            }
+//
+//                            BufferedReader br = null;
+//                            FileReader fr = null;
+//
+//                            try {
+//
+//                                //br = new BufferedReader(new FileReader(FILENAME));
+//                                fr = new FileReader(filePath);
+//                                br = new BufferedReader(fr);
+//
+//                                String sCurrentLine;
+//
+//                                while ((sCurrentLine = br.readLine()) != null) {
+//                                    Log.e(TAG, "Data: "+sCurrentLine);
+//                                }
+//
+//                            } catch (IOException e) {
+//
+//                                e.printStackTrace();
+//
+//                            } finally {
+//
+//                                try {
+//
+//                                    if (br != null)
+//                                        br.close();
+//
+//                                    if (fr != null)
+//                                        fr.close();
+//
+//                                } catch (IOException ex) {
+//
+//                                    ex.printStackTrace();
+//
+//                                }
+//
+//                            }
+
+                            taskManager.onTIMPRcv(filePath, msgContents, host);
                         }
 
                     } else {
@@ -181,7 +232,7 @@ public class CommunicationManager implements Runnable {
                                     Double.parseDouble(msg[9]), Double.parseDouble(msg[10]), msg[11], msg[12]);
                         } else if (pktType == 4) {
                             Log.e(TAG, ">>> Else TIMP Packet received from destination address: " + packet.getAddress().getHostAddress());
-                            taskManager.onTIMPRcv(host);
+                            taskManager.onTIMPRcv(msg[2], msg[4], host);
                         }
                     }
                 } else {
@@ -316,9 +367,8 @@ public class CommunicationManager implements Runnable {
     }
 
     public byte[] convertDatatoBytes(String data) {
-        byte[] dataArray = data.getBytes();
 
-        return dataArray;
+        return data.getBytes();
     }
 
     private class SendDiscoveryPacketThread extends Thread {

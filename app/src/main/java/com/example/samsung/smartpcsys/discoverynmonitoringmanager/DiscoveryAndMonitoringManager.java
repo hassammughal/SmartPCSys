@@ -230,7 +230,6 @@ public class DiscoveryAndMonitoringManager {
                 }
             }
         }).start();
-
     }
 
     private static int getIndex(String hostAddress) {
@@ -529,7 +528,6 @@ public class DiscoveryAndMonitoringManager {
         Log.e(TAG, "CPU Current Speed: " + currentSpeed + "GHz");
         Log.e(TAG, "CPU Maximum Speed: " + maximumSpeed + "GHz");
         Log.e(TAG, "CPU Minimum Speed: " + minimumSpeed + "GHz");
-
 //        }
     }
 

@@ -1,10 +1,7 @@
 package com.example.samsung.smartpcsys.dispatcher;
 
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.example.samsung.smartpcsys.communicationmanager.CommunicationManager;
 import com.example.samsung.smartpcsys.packets.TIMPacket;
@@ -16,14 +13,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 import bsh.EvalError;
 import bsh.Interpreter;
@@ -36,7 +36,15 @@ public class TaskManager {
 
 
     public void createPacket(Tasks task, String filePath, String hostAddress) {
+        String a = null;
+        try {
+            a = getStringFromFile(filePath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Log.e(TAG, "Contents in the file: " + a);
         File source = new File(filePath);
+        String fileName = source.getName();
         //utils.readBytesFromFile(source);
         Log.e(TAG, "FilePath: " + filePath + " Filename: " + source.getName());
         FileInputStream fis = null;
@@ -59,15 +67,15 @@ public class TaskManager {
         } catch (IOException ex) {
             Log.e(TAG, "IOException:" + ex);
         }
-        byte[] bytes = bos.toByteArray();
+        // byte[] bytes = bos.toByteArray();
         InetAddress inetAddress = null;
         try {
             inetAddress = InetAddress.getByName(hostAddress);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-
-        TIMPacket timPacket = new TIMPacket(4, task.getTaskID(), bytes, inetAddress);
+        //Log.e(TAG, "Bytes in the file: " + Arrays.toString(bytes));
+        TIMPacket timPacket = new TIMPacket(4, task.getTaskID(), fileName, inetAddress, a);
         communicationManager.sendPacket(timPacket);
     }
 
@@ -119,15 +127,15 @@ public class TaskManager {
         return taskFileLocation;
     }
 
-    public void onTIMPRcv(String hostAddress) {
+    public void onTIMPRcv(String fName, String mesg, String hostAddress) {
 
-        Handler handler = new Handler(new Handler.Callback() {
-            @Override
-            public boolean handleMessage(Message msg) {
-                switch (msg.what) {
-                    case MESSAGE_READ:
-                        Log.e(TAG, "Text/File Received!");
-                        File desti = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Receive/Fibonacci.java");
+//        Handler handler = new Handler(Looper.getMainLooper()) {
+//            @Override
+//            public void handleMessage(Message msg) {
+//                switch (msg.what) {
+//                    case MESSAGE_READ:
+//                        Log.e(TAG, "Text/File Received!");
+        File desti = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Receive/" + fName);
                         if (!desti.exists()) {
                             try {
                                 desti.createNewFile();
@@ -136,35 +144,45 @@ public class TaskManager {
                             }
                         }
                         Log.e(TAG, "FileName: " + desti.getName() + " File Path: " + desti.getAbsolutePath());
-                        byte[] readBuff = (byte[]) msg.obj;
-                        String tempMsg = new String(readBuff, 0, msg.arg1);
-                        Log.e(TAG, "Message: " + tempMsg);
+//                        byte[] readBuff = new String(readBuff, mesg);
+//                        String tempMsg = new String(readBuff);
+        Log.e(TAG, "Byte value: " + Arrays.toString(mesg.getBytes()));
+        Log.e(TAG, "Message: " + mesg);
                         try {
+                            Utils.writeToFile(desti, mesg);
                             interpreter.set("Context", SngltonClass.get().getApplicationContext());
-                            interpreter.eval(tempMsg);
-
-                            FileOutputStream fos = null;
-                            try {
-                                fos = new FileOutputStream(desti);
-                                fos.write(readBuff);
-                                fos.flush();
-                                fos.close();
-
-                                Utils.writeBytesToFile(desti, readBuff);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-
+                            interpreter.eval(mesg);
                         } catch (EvalError evalError) {
                             evalError.printStackTrace();
-                            Toast.makeText(SngltonClass.get().getApplicationContext(), "error: " + evalError.toString(), Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "error: " + evalError.toString());
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
 
-                        break;
-                }
-                return true;
-            }
-        });
+//                        break;
+//                }
+////                return true;
+//            }
+//        };
     }
 
+    public static String convertStreamToString(InputStream is) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n");
+        }
+        reader.close();
+        return sb.toString();
+    }
+
+    public static String getStringFromFile(String filePath) throws Exception {
+        File fl = new File(filePath);
+        FileInputStream fin = new FileInputStream(fl);
+        String ret = convertStreamToString(fin);
+        //Make sure you close all streams.
+        fin.close();
+        return ret;
+    }
 }

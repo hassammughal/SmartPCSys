@@ -77,8 +77,8 @@ public class Utils {
     }
 
     /**
-     * Writes the specified byte[] to the specified File path.
-     *
+     * Writes the sp
+     *ecified byte[] to the specified File path.
      * @param theFile File Object representing the path to write to.
      * @param bytes   The byte[] of data to write to the File.
      * @throws IOException Thrown if there is problem creating or writing the

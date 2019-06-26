@@ -3,19 +3,20 @@ package com.example.samsung.smartpcsys.packets;
 import android.support.annotation.NonNull;
 
 import java.net.InetAddress;
-import java.util.Arrays;
 
 public class TIMPacket {
     private int packetType;
-    private byte[] data;
+    private String data;
     private int taskID;
     private InetAddress destinationIP;
+    private String filePath;
 
-    public TIMPacket(int packetType, int taskID, byte[] data, InetAddress destinationIP) {
+    public TIMPacket(int packetType, int taskID, String filePath, InetAddress destinationIP, String data) {
         this.packetType = packetType;
         this.data = data;
         this.taskID = taskID;
         this.destinationIP = destinationIP;
+        this.filePath = filePath;
     }
 
     public int getPacketType() {
@@ -35,11 +36,11 @@ public class TIMPacket {
         this.taskID = taskID;
     }
 
-    public byte[] getData() {
+    public String getData() {
         return data;
     }
 
-    public void setData(byte[] data) {
+    public void setData(String data) {
         this.data = data;
     }
 
@@ -51,9 +52,17 @@ public class TIMPacket {
         this.destinationIP = destinationIP;
     }
 
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
     @Override
     @NonNull
     public String toString() {
-        return (this.getPacketType() + "|" + this.getTaskID() + "|" + Arrays.toString(this.getData()) + "|" + this.getDestinationIP()); //this.getNodeID() + "|"
+        return (this.getPacketType() + "|" + this.getTaskID() + "|" + this.getFilePath()) + "|" + this.getDestinationIP() + "|" + this.getData(); //this.getNodeID() + "|"
     }
 }

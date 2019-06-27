@@ -476,6 +476,30 @@ public class Utils {
         return ret;
     }
 
+    public static String readResultFile() {
+        String ret = "";
+        String filePath = Environment.getExternalStorageDirectory() + "/SmartPCSys/Receive/";
+        try {
+            FileInputStream fis = new FileInputStream(filePath + "Result.txt");
+            DataInputStream dis = new DataInputStream(fis);
+            BufferedReader br = new BufferedReader(new InputStreamReader(dis));
+            String receiveString = "";
+            StringBuilder stringBuilder = new StringBuilder();
+
+            while ((receiveString = br.readLine()) != null) {
+                stringBuilder.append(receiveString);
+            }
+
+            ret = stringBuilder.toString();
+            dis.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ret;
+    }
+
     private static void writeToFile(String json, int id) {
         try {
             String filePath = Environment.getExternalStorageDirectory() + "/SmartPCSys/MetaData/";

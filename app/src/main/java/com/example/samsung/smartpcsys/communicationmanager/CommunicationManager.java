@@ -16,6 +16,7 @@ import com.example.samsung.smartpcsys.packets.NIMPacket;
 import com.example.samsung.smartpcsys.packets.NIRMPacket;
 import com.example.samsung.smartpcsys.packets.NIUMPacket;
 import com.example.samsung.smartpcsys.packets.TIMPacket;
+import com.example.samsung.smartpcsys.packets.TIRMPacket;
 import com.example.samsung.smartpcsys.resourcepool.RoutingTable;
 import com.example.samsung.smartpcsys.utils.Global;
 import com.example.samsung.smartpcsys.utils.SngltonClass;
@@ -133,11 +134,14 @@ public class CommunicationManager implements Runnable {
                 if (pktType == 4) {
                     Log.e(TAG, "TIM Packet is Received!");
                 }
+                if (pktType == 5) {
+                    Log.e(TAG, "TIRM Packet is Received!");
+                }
 
                 if (!host.equals(myAddr)) {     // if the hostAddress in the packet is not my own IP Address
                     //See if the packet holds the right command (message)
 
-                    Log.e(TAG, ">>>Packet received; Data: " + message);
+                    Log.e(TAG, ">>>Packet received Data: " + message);
                     if (Global.rtEntry.size() > 1) {    //if the routing table has more than 1 routing entry, because the own entry is always added initially, thus to get rest of the devices address
                         if (pktType == 1 && !LookupRoute(host)) {   // if the packet received is NIM/discovery packet and it is not present in the routing table
                             Log.e(TAG, ">>> NIM Packet received from destination address: " + packet.getAddress().getHostAddress());
@@ -172,50 +176,13 @@ public class CommunicationManager implements Runnable {
                             String filePath = msg[2];
                             Log.e(TAG, ">>> TIM Packet received from destination address: " + packet.getAddress().getHostAddress());
                             String msgContents = msg[4];
-                            Log.e(TAG, "File Contents: " + msgContents);
-
-//                            try (FileOutputStream fileOuputStream = new FileOutputStream(filePath)){
-//                                fileOuputStream.write(msg[4].getBytes());
-//                            }
-//
-//                            BufferedReader br = null;
-//                            FileReader fr = null;
-//
-//                            try {
-//
-//                                //br = new BufferedReader(new FileReader(FILENAME));
-//                                fr = new FileReader(filePath);
-//                                br = new BufferedReader(fr);
-//
-//                                String sCurrentLine;
-//
-//                                while ((sCurrentLine = br.readLine()) != null) {
-//                                    Log.e(TAG, "Data: "+sCurrentLine);
-//                                }
-//
-//                            } catch (IOException e) {
-//
-//                                e.printStackTrace();
-//
-//                            } finally {
-//
-//                                try {
-//
-//                                    if (br != null)
-//                                        br.close();
-//
-//                                    if (fr != null)
-//                                        fr.close();
-//
-//                                } catch (IOException ex) {
-//
-//                                    ex.printStackTrace();
-//
-//                                }
-//
-//                            }
-
+                            // Log.e(TAG, "File Contents: " + msgContents);
                             taskManager.onTIMPRcv(filePath, msgContents, host);
+                        }
+
+                        if (pktType == 5) {
+                            Log.e(TAG, ">>> TIRM Packet received from destination address: " + packet.getAddress().getHostAddress());
+                            taskManager.onTIRMPRcv(msg[2]);
                         }
 
                     } else {
@@ -233,6 +200,9 @@ public class CommunicationManager implements Runnable {
                         } else if (pktType == 4) {
                             Log.e(TAG, ">>> Else TIMP Packet received from destination address: " + packet.getAddress().getHostAddress());
                             taskManager.onTIMPRcv(msg[2], msg[4], host);
+                        } else if (pktType == 5) {
+                            Log.e(TAG, ">>> Else TIRMP Packet received from destination address: " + packet.getAddress().getHostAddress());
+                            taskManager.onTIRMPRcv(msg[2]);
                         }
                     }
                 } else {
@@ -280,6 +250,7 @@ public class CommunicationManager implements Runnable {
 //                e.printStackTrace();
 //            }
 //        }
+
         if (o instanceof NIRMPacket) {  //Gets the instance of the NIRM packet object passed to it
             byte[] contents = o.toString().getBytes();  //Convert the string to bytes
             try {
@@ -298,6 +269,7 @@ public class CommunicationManager implements Runnable {
                 e.printStackTrace();
             }
         }
+
         if (o instanceof NIUMPacket) {      //Gets the instance of the NIUM Packet object passed to it
             Log.e(TAG, "sendPacket Method of NIUM Packet is Called");
             byte[] contents = o.toString().getBytes();  //Convert the string to bytes
@@ -317,6 +289,7 @@ public class CommunicationManager implements Runnable {
                 e.printStackTrace();
             }
         }
+
         if (o instanceof TIMPacket) {
             new Thread(new Runnable() {
                 @Override
@@ -337,6 +310,28 @@ public class CommunicationManager implements Runnable {
                 }
             }).start();
         }
+
+        if (o instanceof TIRMPacket) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    byte[] contents = o.toString().getBytes();
+                    try {
+                        DatagramSocket sokt = new DatagramSocket();
+                        sokt.setReuseAddress(true);
+                        sokt.setBroadcast(true);
+                        DatagramPacket packet = new DatagramPacket(contents, contents.length, ((TIRMPacket) o).getSourceIP(), 8888);
+                        sokt.send(packet);
+                        Log.e(TAG, ">>>Sent TIRM packet to: " + packet.getAddress().getHostAddress());
+                    } catch (SocketException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        }
+
         if (o instanceof MDIRMPacket) {
             try {
                 DatagramSocket sokt = new DatagramSocket();

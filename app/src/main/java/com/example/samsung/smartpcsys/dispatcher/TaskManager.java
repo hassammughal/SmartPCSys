@@ -1,10 +1,14 @@
 package com.example.samsung.smartpcsys.dispatcher;
 
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.samsung.smartpcsys.communicationmanager.CommunicationManager;
 import com.example.samsung.smartpcsys.packets.TIMPacket;
+import com.example.samsung.smartpcsys.packets.TIRMPacket;
 import com.example.samsung.smartpcsys.resourcepool.Tasks;
 import com.example.samsung.smartpcsys.utils.SngltonClass;
 import com.example.samsung.smartpcsys.utils.Utils;
@@ -23,7 +27,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 
 import bsh.EvalError;
 import bsh.Interpreter;
@@ -34,7 +37,6 @@ public class TaskManager {
     private CommunicationManager communicationManager = new CommunicationManager();
     static final int MESSAGE_READ = 1;
 
-
     public void createPacket(Tasks task, String filePath, String hostAddress) {
         String a = null;
         try {
@@ -42,11 +44,11 @@ public class TaskManager {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Log.e(TAG, "Contents in the file: " + a);
+        //    Log.e(TAG, "Contents in the file: " + a);
         File source = new File(filePath);
         String fileName = source.getName();
         //utils.readBytesFromFile(source);
-        Log.e(TAG, "FilePath: " + filePath + " Filename: " + source.getName());
+        //   Log.e(TAG, "FilePath: " + filePath + " Filename: " + source.getName());
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(source);
@@ -129,41 +131,50 @@ public class TaskManager {
 
     public void onTIMPRcv(String fName, String mesg, String hostAddress) {
 
-//        Handler handler = new Handler(Looper.getMainLooper()) {
-//            @Override
-//            public void handleMessage(Message msg) {
-//                switch (msg.what) {
-//                    case MESSAGE_READ:
-//                        Log.e(TAG, "Text/File Received!");
         File desti = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Receive/" + fName);
-                        if (!desti.exists()) {
-                            try {
-                                desti.createNewFile();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        Log.e(TAG, "FileName: " + desti.getName() + " File Path: " + desti.getAbsolutePath());
-//                        byte[] readBuff = new String(readBuff, mesg);
-//                        String tempMsg = new String(readBuff);
-        Log.e(TAG, "Byte value: " + Arrays.toString(mesg.getBytes()));
+        if (!desti.exists()) {
+            try {
+                desti.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        Log.e(TAG, "FileName: " + desti.getName() + " File Path: " + desti.getAbsolutePath());
         Log.e(TAG, "Message: " + mesg);
-                        try {
-                            Utils.writeToFile(desti, mesg);
-                            interpreter.set("Context", SngltonClass.get().getApplicationContext());
-                            interpreter.eval(mesg);
-                        } catch (EvalError evalError) {
-                            evalError.printStackTrace();
-                            Log.e(TAG, "error: " + evalError.toString());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+        try {
+            Utils.writeToFile(desti, mesg);
+            interpreter.set("Context", SngltonClass.get().getApplicationContext());
+            interpreter.eval(mesg);
+            InetAddress inetAddress = null;
+            try {
+                inetAddress = InetAddress.getByName(hostAddress);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+            String reply = Utils.readResultFile();
+            TIRMPacket tirmPacket = new TIRMPacket(5, inetAddress, reply);
+            communicationManager.sendPacket(tirmPacket);
+        } catch (EvalError evalError) {
+            evalError.printStackTrace();
+            Log.e(TAG, "error: " + evalError.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-//                        break;
-//                }
-////                return true;
-//            }
-//        };
+    }
+
+    public void onTIRMPRcv(String result) {
+        Log.e(TAG, "Result Received: " + result);
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(SngltonClass.get().getApplicationContext(), "Result: " + result, Toast.LENGTH_LONG).show();
+//                new KAlertDialog(SngltonClass.get().getApplicationContext())
+//                        .setTitleText("Result Received")
+//                        .setContentText(result)
+//                        .show();
+            }
+        });
     }
 
     public static String convertStreamToString(InputStream is) throws Exception {

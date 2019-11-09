@@ -186,7 +186,7 @@ public class CommunicationManager implements Runnable {
                         }
 
                     } else {
-                        if (pktType == 1) { //NIM/discovery Packet received and routing table is empty
+                        if (pktType == 1) { //NIM discovery Packet received and routing table is empty
                             onNIMRcv(host, hostAddress);    //insert the route to routing table
                             Log.e(TAG, ">>> Else NIM Packet received from destination address: " + packet.getAddress().getHostAddress());
                         } else if (pktType == 2) {  //NIRM/discovery reply packet received and routing table is empty

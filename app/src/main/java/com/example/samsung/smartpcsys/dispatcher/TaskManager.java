@@ -61,10 +61,12 @@ public class TaskManager {
         Log.e(TAG, "File Size: " + fileSize);
         byte[] buf = new byte[fileSize];
         try {
-            for (int readNum; (readNum = fis.read(buf)) != -1; ) {
-                bos.write(buf, 0, readNum); //no doubt here is 0
-                //Writes len bytes from the specified byte array starting at offset off to this byte array output stream.
-                Log.e(TAG, "read " + readNum + " bytes,");
+            if (fis != null) {
+                for (int readNum; (readNum = fis.read(buf)) != -1; ) {
+                    bos.write(buf, 0, readNum); //no doubt here is 0
+                    //Writes len bytes from the specified byte array starting at offset off to this byte array output stream.
+                    Log.e(TAG, "read " + readNum + " bytes,");
+                }
             }
         } catch (IOException ex) {
             Log.e(TAG, "IOException:" + ex);
@@ -130,8 +132,13 @@ public class TaskManager {
     }
 
     public void onTIMPRcv(String fName, String mesg, String hostAddress) {
-
         File desti = new File(Environment.getExternalStorageDirectory() + "/SmartPCSys/Receive/" + fName);
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(SngltonClass.get().getApplicationContext(), "Received Task, Executing It!", Toast.LENGTH_LONG).show();
+            }
+        });
         if (!desti.exists()) {
             try {
                 desti.createNewFile();
@@ -153,6 +160,12 @@ public class TaskManager {
             }
             String reply = Utils.readResultFile();
             TIRMPacket tirmPacket = new TIRMPacket(5, inetAddress, reply);
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(SngltonClass.get().getApplicationContext(), "Task Executed, Now sending the result back to source device", Toast.LENGTH_LONG).show();
+                }
+            });
             communicationManager.sendPacket(tirmPacket);
         } catch (EvalError evalError) {
             evalError.printStackTrace();
@@ -160,7 +173,6 @@ public class TaskManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     public void onTIRMPRcv(String result) {

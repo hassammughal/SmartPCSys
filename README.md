@@ -1,6 +1,6 @@
 # SmartPCSys
 
-The android application developed, is a simple and concise depiction of mobile ad hoc cloud using UDP Communication. The architecture which is followed in the application design and development is in the following figure;
+The SmartPCSys android application developed, is a simple and concise depiction of mobile ad hoc cloud using UDP Communication. I have used BeanShell library for performing the remote execution of the code in file with extension .java. The architecture which is followed in the application design and development is in the following figure;
 
 ![Android Application Architecture](https://github.com/hassammughal/SmartPCSys/blob/master/image.png)
 
